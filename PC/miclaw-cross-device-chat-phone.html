@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>MiClaw 手机端 667×1444</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#ccc}
+.vp{
+  width:667px;height:1444px;
+  transform-origin:top left;
+  background:#F7F7F7;
+  font-family:-apple-system,'PingFang SC','Helvetica Neue',sans-serif;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  position:absolute;top:0;left:0;
+}
+
+/* 状态栏 ~44dp → 88px @2x */
+.status-bar{
+  height:88px;background:#F7F7F7;
+  display:flex;align-items:flex-end;padding:0 36px 14px;
+  justify-content:space-between;font-size:30px;font-weight:600;color:#000;
+  flex-shrink:0;
+}
+
+/* 顶栏 - ChatScreen.kt: hamburger + centered title + settings */
+.top-bar{
+  height:108px;background:#F7F7F7;
+  display:flex;align-items:center;padding:0 36px;gap:16px;
+  flex-shrink:0;
+}
+.top-bar .btn{width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:32px;color:rgba(0,0,0,0.6);flex-shrink:0}
+.top-bar .center{flex:1;text-align:center}
+.top-bar .center .name{font-size:38px;font-weight:500;color:#000}
+.top-bar .center .sub{font-size:24px;color:rgba(0,0,0,0.4);margin-top:4px}
+
+/* 消息区 */
+.messages{flex:1;overflow-y:auto;padding:20px 28px;display:flex;flex-direction:column;gap:32px}
+
+/* 用户消息 - UserMessageBubble.kt: max 300dp→600px, bg rgba(52,130,255,0.1), rounded 16dp→32px, padding 16h/14v→32/28 */
+.user-msg{display:flex;justify-content:flex-end}
+.user-bubble{
+  max-width:480px;
+  background:rgba(52,130,255,0.1);
+  border-radius:32px;
+  padding:28px 32px;
+  color:#000;font-size:32px;line-height:46px;
+  word-break:break-word;
+}
+
+/* AI消息 - AssistantMessageContent.kt: white card, rounded 16dp→32px, padding 12dp→24px */
+.ai-msg{display:flex;flex-direction:column;gap:14px}
+/* 头像行 - 28dp→56px circle + 14sp→28px name */
+.ai-avatar-row{display:flex;align-items:center;gap:12px}
+.ai-avatar{
+  width:56px;height:56px;border-radius:50%;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;color:#fff;
+}
+.ai-name{font-size:28px;font-weight:450;color:#000}
+.ai-card{
+  background:#FFF;border-radius:32px;padding:24px;
+  color:#000;font-size:32px;line-height:52px;font-weight:330;
+  word-break:break-word;
+}
+.ai-card b{font-weight:450}
+.hl{color:#3482FF}
+
+/* 输入栏 - InputField.kt */
+.input-bar{padding:16px 28px 56px;background:#F7F7F7;flex-shrink:0}
+.input-container{
+  display:flex;align-items:center;gap:16px;
+  background:#FFF;border:1px solid rgba(0,0,0,0.06);
+  border-radius:52px;padding:14px 20px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.04);
+}
+.input-icon{
+  width:52px;height:52px;border-radius:50%;
+  background:rgba(0,0,0,0.04);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;color:rgba(0,0,0,0.4);flex-shrink:0;
+}
+.input-text{flex:1;font-size:30px;color:rgba(0,0,0,0.35);padding:8px 0}
+</style>
+</head>
+<body>
+<div class="vp" id="vp">
+  <div class="status-bar"><span>9:41</span><span style="font-size:22px">📶 📡 🔋</span></div>
+  <div class="top-bar">
+    <div class="btn">☰</div>
+    <div class="center"><div class="name">Xiaomi miclaw</div><div class="sub">AI 生成内容仅供参考</div></div>
+    <div class="btn">⚙</div>
+  </div>
+  <div class="messages">
+    <div style="text-align:center;font-size:24px;color:rgba(0,0,0,0.25);padding:8px 0">— 今天 —</div>
+
+    <div class="user-msg"><div class="user-bubble">帮我查一下明天北京到上海的高铁票，下午2点左右出发的</div></div>
+
+    <div class="ai-msg">
+      <div class="ai-avatar-row"><div class="ai-avatar">🤖</div><div class="ai-name">Xiaomi miclaw</div></div>
+      <div class="ai-card">好的，我帮你查到了以下车次：<br><br>🚄 <b>G1次</b> 北京南→上海虹桥<br>· 出发 <span class="hl">14:00</span> → 到达 18:32<br>· 历时 4小时32分 · 二等座 ¥553<br><br>🚄 <b>G7次</b> 北京南→上海虹桥<br>· 出发 <span class="hl">14:28</span> → 到达 19:01<br>· 历时 4小时33分 · 二等座 ¥553<br><br>需要我帮你预订哪一趟？</div>
+    </div>
+
+    <div class="user-msg"><div class="user-bubble">订G1次吧，二等座，用我的身份信息</div></div>
+
+    <div class="ai-msg">
+      <div class="ai-avatar-row"><div class="ai-avatar">🤖</div><div class="ai-name">Xiaomi miclaw</div></div>
+      <div class="ai-card">✅ 已为你预订成功！<br><br><b>G1次</b> 明天 14:00 北京南→上海虹桥<br>二等座 · ¥553 · 已从默认支付方式扣款<br><br>电子客票已发送到你的12306账户。到站后还需要安排什么吗？</div>
+    </div>
+  </div>
+  <div class="input-bar">
+    <div class="input-container">
+      <div class="input-icon">＋</div>
+      <div class="input-text">发消息或按住说话</div>
+      <div class="input-icon">🎤</div>
+    </div>
+  </div>
+</div>
+<script>
+function fit(){
+  var vp=document.getElementById('vp');
+  var s=Math.min(window.innerWidth/667,window.innerHeight/1444);
+  vp.style.transform='scale('+s+')';
+}
+fit();window.addEventListener('resize',fit);
+</script>
+</body>
+</html>

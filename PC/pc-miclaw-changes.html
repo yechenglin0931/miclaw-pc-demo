@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PC MiClaw 内测版改动清单</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: #f8f9fa; color: #1a1a2e; line-height: 1.7;
+}
+
+/* ===== 顶部总标题 ===== */
+.master-header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 50%, #44337a 100%);
+  color: #fff; padding: 48px 60px 40px; position: relative; overflow: hidden;
+}
+.master-header::before {
+  content: ''; position: absolute; top: -30%; right: -5%; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(102,126,234,0.15) 0%, transparent 70%); border-radius: 50%;
+}
+.master-header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; position: relative; }
+.master-header p { font-size: 15px; opacity: 0.7; position: relative; }
+.master-meta { display: flex; gap: 28px; margin-top: 20px; font-size: 13px; opacity: 0.6; position: relative; }
+.master-meta span { display: flex; align-items: center; gap: 6px; }
+
+/* ===== Tab 导航栏 ===== */
+.tab-bar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  padding: 0 40px; display: flex; gap: 0; overflow-x: auto;
+  transition: box-shadow 0.2s;
+}
+.tab-bar.scrolled { box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
+.tab-bar::-webkit-scrollbar { height: 0; }
+.tab-btn {
+  display: flex; align-items: center; gap: 8px; padding: 14px 18px;
+  font-size: 13px; font-weight: 500; color: #666; cursor: pointer;
+  border: none; background: none; border-bottom: 2.5px solid transparent;
+  white-space: nowrap; transition: all 0.2s; flex-shrink: 0;
+}
+.tab-btn:hover { color: #333; background: rgba(0,0,0,0.02); }
+.tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
+.tab-num {
+  width: 22px; height: 22px; border-radius: 6px; display: flex;
+  align-items: center; justify-content: center; font-size: 10px;
+  font-weight: 700; color: #fff; flex-shrink: 0;
+}
+
+/* ===== Tab 内容面板 ===== */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="master-header">
+  <h1>🔧 PC MiClaw 内测版改动清单</h1>
+  <p>基于 3-23 版本源代码，面向研发的逐项改动说明</p>
+  <div class="master-meta">
+    <span>📅 2026-03-24</span>
+    <span>👤 产品：叶成林</span>
+    <span>📦 基线版本：miclaw_desktop-main-3-23</span>
+  </div>
+</div>
+
+<!-- ===== 通用样式 ===== -->
+<style>
+/* ===== 改动点 header ===== */
+.change-header {
+  color: #fff; padding: 32px 60px; position: relative; overflow: hidden;
+}
+.change-header::after {
+  content: ''; position: absolute; top: -50%; right: -10%; width: 350px; height: 350px;
+  background: rgba(255,255,255,0.06); border-radius: 50%;
+}
+.change-tag {
+  display: inline-block; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+  padding: 4px 12px; border-radius: 14px; font-size: 12px; font-weight: 600;
+  letter-spacing: 1px; margin-bottom: 10px;
+}
+.change-header h2 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.change-header p { font-size: 13px; opacity: 0.8; }
+.change-meta { display: flex; gap: 18px; margin-top: 12px; font-size: 12px; opacity: 0.65; }
+.change-meta span { display: flex; align-items: center; gap: 5px; }
+
+/* ===== 内容区 ===== */
+.content { max-width: 1100px; margin: 0 auto; padding: 28px 60px 20px; }
+.section { margin-bottom: 40px; }
+.section-title {
+  font-size: 17px; font-weight: 700; color: #1a1a2e; margin-bottom: 16px;
+  padding-left: 14px; border-left: 4px solid #667eea; line-height: 1.3;
+}
+.section-title.orange { border-left-color: #f59e0b; }
+.card {
+  background: #fff; border-radius: 16px; padding: 24px 28px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+  margin-bottom: 18px;
+}
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 6px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+}
+.badge-red { background: #fee2e2; color: #dc2626; }
+.badge-green { background: #dcfce7; color: #16a34a; }
+.badge-blue { background: #dbeafe; color: #2563eb; }
+.badge-yellow { background: #fef3c7; color: #d97706; }
+.badge-gray { background: #f3f4f6; color: #6b7280; }
+
+/* ===== 对比区 ===== */
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.compare-box { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04); }
+.compare-label {
+  padding: 10px 18px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+  display: flex; align-items: center; gap: 8px;
+}
+.compare-label.before { background: #fef2f2; color: #dc2626; }
+.compare-label.after { background: #f0fdf4; color: #16a34a; }
+.compare-content { padding: 18px; }
+
+/* ===== 代码块 ===== */
+.code-block { background: #1e1e2e; border-radius: 12px; overflow: hidden; margin: 14px 0; }
+.code-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; background: rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.code-file { font-size: 12px; color: #a6adc8; font-family: 'SF Mono', 'Fira Code', monospace; }
+.code-file::before { content: '📄 '; font-size: 11px; }
+.code-lang { font-size: 10px; color: #585b70; text-transform: uppercase; }
+pre { padding: 14px; overflow-x: auto; font-size: 12.5px; line-height: 1.65; font-family: 'SF Mono', 'Fira Code', monospace; }
+code { color: #cdd6f4; }
+.hl-keyword { color: #cba6f7; } .hl-string { color: #a6e3a1; }
+.hl-comment { color: #585b70; font-style: italic; }
+.hl-del { background: rgba(220,38,38,0.15); color: #f38ba8; display: block; margin: 0 -14px; padding: 0 14px; }
+.hl-add { background: rgba(22,163,74,0.15); color: #a6e3a1; display: block; margin: 0 -14px; padding: 0 14px; }
+.hl-func { color: #89b4fa; } .hl-type { color: #89dceb; }
+.hl-prop { color: #f9e2af; } .hl-num { color: #fab387; }
+
+/* ===== 表格 ===== */
+.info-table { width: 100%; border-collapse: collapse; }
+.info-table th { text-align: left; padding: 9px 14px; background: #f0f0f5; font-size: 12px; font-weight: 600; color: #666; border-bottom: 2px solid #e5e7eb; }
+.info-table td { padding: 10px 14px; border-bottom: 1px solid #f0f0f5; font-size: 13px; color: #333; vertical-align: top; }
+.info-table tr:last-child td { border-bottom: none; }
+
+/* ===== 注意事项 ===== */
+.note-box { display: flex; gap: 10px; padding: 14px 18px; border-radius: 12px; margin-top: 14px; font-size: 13px; line-height: 1.6; }
+.note-box.warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+.note-box.info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+.note-box .note-icon { font-size: 18px; flex-shrink: 0; }
+
+/* ===== 步骤 ===== */
+.step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.step-list { display: flex; flex-direction: column; gap: 14px; }
+.step-item {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 18px 22px; background: #f8f9ff; border-radius: 12px;
+  border-left: 3px solid #667eea;
+}
+.step-content { flex: 1; }
+.step-title { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+.step-desc { font-size: 12px; color: #888; }
+
+/* ===== 子改动标签 ===== */
+.sub-change {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  margin-bottom: 12px;
+}
+.sub-change.a { background: #fef3c7; color: #92400e; }
+.sub-change.b { background: #fee2e2; color: #991b1b; }
+.sub-change.c { background: #dbeafe; color: #1e40af; }
+
+/* ===== Mock 组件 ===== */
+.mock-screen {
+  background: #f5f5f5; border-radius: 12px; padding: 28px 20px 20px;
+  position: relative; min-height: 300px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.mock-logo {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 25%, #fff 40%, #fff 60%, #4a90d9 75%, #7b68ee 100%);
+  margin-bottom: 14px;
+}
+.mock-greeting { text-align: center; margin-bottom: 28px; }
+.mock-greeting .line1 {
+  font-size: 20px; font-weight: 600;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.mock-greeting .line2 { font-size: 16px; color: #999; margin-top: 4px; }
+.new-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 500px; margin-bottom: 18px; }
+.new-action-card {
+  padding: 12px 14px; border-radius: 12px; border: 1px solid #e8e8ef;
+  background: #fff; display: flex; align-items: flex-start; gap: 10px;
+}
+.new-action-icon {
+  width: 30px; height: 30px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
+}
+.new-action-title { font-size: 12px; font-weight: 600; color: #1a1a2e; }
+.new-action-desc { font-size: 10px; color: #999; }
+.mock-input {
+  width: 100%; max-width: 500px; background: #fff; border-radius: 14px;
+  border: 1px solid #e5e7eb; padding: 14px 18px; display: flex;
+  align-items: center; justify-content: space-between;
+}
+.mock-input-text { font-size: 13px; color: #bbb; }
+.hidden-overlay {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(220,38,38,0.04) 10px, rgba(220,38,38,0.04) 20px);
+  border-radius: 12px; pointer-events: none;
+}
+.hidden-tag {
+  position: absolute; top: 10px; right: 10px; background: #dc2626; color: #fff;
+  padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 600;
+}
+
+/* ===== Mock 侧边栏 ===== */
+.mock-sidebar {
+  background: #fff; border-radius: 16px; padding: 14px 10px; width: 100%;
+  border: 1px solid #f0f0f5; font-size: 13px;
+}
+.mock-nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+  border-radius: 10px; margin-bottom: 2px; color: #444;
+}
+.mock-nav-item.active { background: rgba(102,126,234,0.08); color: #667eea; font-weight: 500; }
+.mock-nav-item .icon { width: 16px; text-align: center; font-size: 14px; flex-shrink: 0; }
+.mock-nav-item .label { flex: 1; }
+.mock-nav-item .count { font-size: 10px; color: #aaa; }
+.mock-sub-items { padding-left: 20px; }
+.mock-sub-item {
+  display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+  border-radius: 8px; font-size: 12px; color: #666;
+}
+.mock-sub-item .sub-icon {
+  width: 22px; height: 22px; border-radius: 6px; display: flex;
+  align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;
+}
+.mock-divider { height: 1px; background: #f0f0f5; margin: 8px 10px; }
+.mock-history-label {
+  font-size: 10px; font-weight: 600; color: #aab; text-transform: uppercase;
+  letter-spacing: 1px; padding: 6px 10px 4px;
+}
+.mock-session {
+  display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+  border-radius: 8px; font-size: 12px; color: #555;
+}
+.mock-session .sdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.mock-session .stitle { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mock-session .stime { font-size: 10px; color: #bbb; flex-shrink: 0; }
+.highlight-box { border: 2px dashed #ef4444; border-radius: 10px; padding: 2px; margin: 2px 0; position: relative; }
+.highlight-tag { position: absolute; top: -8px; right: 8px; background: #ef4444; color: #fff; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+.highlight-box-green { border: 2px dashed #16a34a; border-radius: 10px; padding: 2px; margin: 2px 0; position: relative; }
+.highlight-tag-green { position: absolute; top: -8px; right: 8px; background: #16a34a; color: #fff; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+
+/* ===== Prompt 卡片 ===== */
+.prompt-cards { display: flex; flex-direction: column; gap: 12px; }
+.prompt-card { background: #fff; border-radius: 12px; border: 1px solid #e8e8ef; overflow: hidden; }
+.prompt-card-header { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid #f0f0f5; }
+.prompt-card-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.prompt-card-title { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+.prompt-card-body { padding: 14px 18px; }
+.prompt-text {
+  font-size: 12px; color: #555; line-height: 1.8; background: #f8f9fa;
+  border-radius: 8px; padding: 12px 14px; border-left: 3px solid #667eea;
+}
+</style>
+
+<!-- ===== Tab 导航栏 ===== -->
+<div class="tab-bar" id="tabBar">
+  <button class="tab-btn active" data-tab="1"><div class="tab-num" style="background:#667eea;">1</div>快捷入口改造</button>
+  <button class="tab-btn" data-tab="2"><div class="tab-num" style="background:#f59e0b;">2</div>侧边栏精简</button>
+  <button class="tab-btn" data-tab="3"><div class="tab-num" style="background:#ef4444;">3</div>移除标题Tag</button>
+  <button class="tab-btn" data-tab="4"><div class="tab-num" style="background:#8b5cf6;">4</div>新手引导内嵌</button>
+  <button class="tab-btn" data-tab="5"><div class="tab-num" style="background:#06b6d4;">5</div>任务页还原设计稿</button>
+  <button class="tab-btn" data-tab="6"><div class="tab-num" style="background:#10b981;">6</div>移除文件夹概念</button>
+  <button class="tab-btn" data-tab="7"><div class="tab-num" style="background:#f97316;">7</div>设备互联改造</button>
+  <button class="tab-btn" data-tab="8"><div class="tab-num" style="background:#ec4899;">8</div>我的文件优化</button>
+  <button class="tab-btn" data-tab="9"><div class="tab-num" style="background:#6366f1;">9</div>侧边栏滚动优化</button>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                    TAB 1 - 快捷入口改造                       ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel active" id="tab-1">
+
+<div class="change-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+  <div class="change-tag">改动点 #1</div>
+  <h2>主界面快捷入口改造</h2>
+  <p>将隐藏的通用快捷入口替换为跨端协作场景化快捷入口，点击后自动填充 Prompt</p>
+  <div class="change-meta"><span>🎯 P0</span><span>📦 首页主界面</span></div>
+</div>
+<div class="content">
+
+<div class="section">
+  <div class="section-title">1.1 改动概述</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:130px">项目</th><th>说明</th></tr>
+      <tr><td>改动类型</td><td><span class="badge badge-yellow">功能变更</span> 快捷入口内容替换 + 取消隐藏</td></tr>
+      <tr><td>当前状态</td><td>快捷入口组件已实现（QuickActionBar + PromptPanel + Redux），但在 AgentView.tsx 中被 <code>hidden</code> 类隐藏</td></tr>
+      <tr><td>目标状态</td><td>显示快捷入口，内容替换为 4 个跨端协作场景卡片</td></tr>
+      <tr><td>涉及文件</td><td><code>AgentView.tsx</code>（取消 hidden）、<code>quick-actions.json</code>、<code>quick-actions-i18n.json</code></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">1.2 界面前后对比</div>
+  <div class="compare-grid">
+    <div class="compare-box">
+      <div class="compare-label before">❌ 改动前（当前线上）</div>
+      <div class="compare-content">
+        <div class="mock-screen" style="min-height:340px;">
+          <div class="hidden-overlay"></div>
+          <div class="hidden-tag">hidden 隐藏中</div>
+          <div class="mock-logo"></div>
+          <div class="mock-greeting"><div class="line1">我是miclaw</div><div class="line2">你好呀</div></div>
+          <div style="display:flex;gap:8px;opacity:0.35;margin-bottom:18px;">
+            <div style="padding:6px 14px;border-radius:20px;border:1px solid #e5e7eb;background:#fff;font-size:12px;color:rgba(0,0,0,0.6);">✍️ 制作幻灯片</div>
+            <div style="padding:6px 14px;border-radius:20px;border:1px solid #e5e7eb;background:#fff;font-size:12px;color:rgba(0,0,0,0.6);">📊 数据分析</div>
+            <div style="padding:6px 14px;border-radius:20px;border:1px solid #e5e7eb;background:#fff;font-size:12px;color:rgba(0,0,0,0.6);">💡 教育学习</div>
+          </div>
+          <div class="mock-input" style="max-width:400px;"><span class="mock-input-text">分配一个任务或提问任何问题</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="compare-box">
+      <div class="compare-label after">✅ 改动后（目标效果）</div>
+      <div class="compare-content">
+        <div class="mock-screen" style="min-height:340px;">
+          <div class="mock-logo"></div>
+          <div class="mock-greeting"><div class="line1">我是miclaw</div><div class="line2">你好呀</div></div>
+          <div class="new-actions">
+            <div class="new-action-card"><div class="new-action-icon" style="background:#eff6ff;">📱</div><div><div class="new-action-title">提取手机素材</div><div class="new-action-desc">连接手机，提取照片并分类整理</div></div></div>
+            <div class="new-action-card"><div class="new-action-icon" style="background:#fef2f2;">📹</div><div><div class="new-action-title">跨端远程看家</div><div class="new-action-desc">打开摄像头，远程查看家中情况</div></div></div>
+            <div class="new-action-card"><div class="new-action-icon" style="background:#f0fdf4;">🎬</div><div><div class="new-action-title">后台直播提炼</div><div class="new-action-desc">静音播放直播，生成总结笔记</div></div></div>
+            <div class="new-action-card"><div class="new-action-icon" style="background:#fefce8;">📂</div><div><div class="new-action-title">定期文件整理</div><div class="new-action-desc">自动扫描归类，按日期归档</div></div></div>
+          </div>
+          <div class="mock-input" style="max-width:400px;"><span class="mock-input-text">有什么可以帮忙的？</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">1.3 快捷入口 Prompt 详情</div>
+  <div class="prompt-cards">
+    <div class="prompt-card"><div class="prompt-card-header"><div class="prompt-card-icon" style="background:#eff6ff;">📱</div><div><div class="prompt-card-title">提取手机素材</div><span class="badge badge-blue">跨端协作</span></div></div><div class="prompt-card-body"><div class="prompt-text">帮我连接我的小米手机，找出昨天我在户外拍的所有照片，提取其中的宠物的照片，并在 PC 桌面新建一个宠物目录保存下来。</div></div></div>
+    <div class="prompt-card"><div class="prompt-card-header"><div class="prompt-card-icon" style="background:#fef2f2;">📹</div><div><div class="prompt-card-title">跨端远程看家</div><span class="badge badge-red">智能家居</span></div></div><div class="prompt-card-body"><div class="prompt-text">打开家里的摄像头，看一下家里有没有人</div></div></div>
+    <div class="prompt-card"><div class="prompt-card-header"><div class="prompt-card-icon" style="background:#f0fdf4;">🎬</div><div><div class="prompt-card-title">后台直播提炼</div><span class="badge badge-green">内容处理</span></div></div><div class="prompt-card-body"><div class="prompt-text">去后台静音播放这场长达 3 小时的发布会直播，生成总结记录到我的手机笔记里。</div></div></div>
+    <div class="prompt-card"><div class="prompt-card-header"><div class="prompt-card-icon" style="background:#fefce8;">📂</div><div><div class="prompt-card-title">定期文件整理</div><span class="badge badge-yellow">自动化任务</span></div></div><div class="prompt-card-body"><div class="prompt-text">创建一个每日任务：每天下午 6 点下班前，自动扫描我的"下载"文件夹和"桌面"。把今天新增的所有 Word、PPT 和 PDF 归类到一个新文件夹，按今天的日期命名，然后统一移动到桌面的"工作归档"目录中。</div></div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">1.4 代码改动指引</div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#667eea;">1</div><div><div class="step-title">AgentView.tsx — 取消 hidden</div><div class="step-desc">src/renderer/components/agent/AgentView.tsx</div></div></div>
+    <div class="code-block"><div class="code-header"><span class="code-file">AgentView.tsx — 约第 420 行</span><span class="code-lang">tsx</span></div>
+      <pre><code><span class="hl-del">- &lt;div className="hidden max-w-3xl mx-auto px-4 pb-3"&gt;</span>
+<span class="hl-add">+ &lt;div className="max-w-3xl mx-auto px-4 pb-3"&gt;</span></code></pre></div>
+    <div class="note-box info"><span class="note-icon">💡</span><div>仅需删除 <code>hidden</code> 这一个 class。</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#667eea;">2</div><div><div class="step-title">quick-actions.json — 替换 4 个 action 配置</div><div class="step-desc">public/quick-actions.json</div></div></div>
+    <div class="code-block"><div class="code-header"><span class="code-file">quick-actions.json — 完整替换</span><span class="code-lang">json</span></div>
+      <pre><code>{ <span class="hl-prop">"version"</span>: <span class="hl-num">1</span>, <span class="hl-prop">"actions"</span>: [
+  { <span class="hl-prop">"id"</span>: <span class="hl-string">"phone-material"</span>, <span class="hl-prop">"emoji"</span>: <span class="hl-string">"📱"</span>, <span class="hl-prop">"color"</span>: <span class="hl-string">"#3B82F6"</span>, <span class="hl-prop">"prompts"</span>: [{ <span class="hl-prop">"id"</span>: <span class="hl-string">"phone-material-default"</span> }] },
+  { <span class="hl-prop">"id"</span>: <span class="hl-string">"remote-camera"</span>, <span class="hl-prop">"emoji"</span>: <span class="hl-string">"📹"</span>, <span class="hl-prop">"color"</span>: <span class="hl-string">"#EF4444"</span>, <span class="hl-prop">"prompts"</span>: [{ <span class="hl-prop">"id"</span>: <span class="hl-string">"remote-camera-default"</span> }] },
+  { <span class="hl-prop">"id"</span>: <span class="hl-string">"live-summary"</span>, <span class="hl-prop">"emoji"</span>: <span class="hl-string">"🎬"</span>, <span class="hl-prop">"color"</span>: <span class="hl-string">"#16A34A"</span>, <span class="hl-prop">"prompts"</span>: [{ <span class="hl-prop">"id"</span>: <span class="hl-string">"live-summary-default"</span> }] },
+  { <span class="hl-prop">"id"</span>: <span class="hl-string">"file-organize"</span>, <span class="hl-prop">"emoji"</span>: <span class="hl-string">"📂"</span>, <span class="hl-prop">"color"</span>: <span class="hl-string">"#D97706"</span>, <span class="hl-prop">"prompts"</span>: [{ <span class="hl-prop">"id"</span>: <span class="hl-string">"file-organize-default"</span> }] }
+] }</code></pre></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#667eea;">3</div><div><div class="step-title">quick-actions-i18n.json — 替换国际化文案</div><div class="step-desc">public/quick-actions-i18n.json</div></div></div>
+    <div class="note-box info"><span class="note-icon">💡</span><div>每个 action 的 label、description、prompt 文案参照 1.3 节 Prompt 详情。</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">1.5 验收标准</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:40px">#</th><th>验收项</th><th style="width:70px">优先级</th></tr>
+      <tr><td>1</td><td>主界面显示 4 个快捷入口：提取手机素材、跨端远程看家、后台直播提炼、定期文件整理</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>2</td><td>点击任意快捷入口，对应 Prompt 正确填充到输入框</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>3</td><td>填充后输入框自动聚焦，可编辑后发送</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>4</td><td>发送后快捷入口隐藏，进入会话界面</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>5</td><td>中英文切换后文案正确</td><td><span class="badge badge-blue">P1</span></td></tr>
+    </table>
+  </div>
+</div>
+
+</div><!-- end content -->
+</div><!-- end tab-1 -->
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                    TAB 2 - 侧边栏精简                         ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-2">
+
+<div class="change-header" style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);">
+  <div class="change-tag">改动点 #2</div>
+  <h2>侧边栏精简改造</h2>
+  <p>设备互联去掉二级展开直接跳群聊、移除模拟 Event 调试入口、对话记录中过滤定时任务类 session</p>
+  <div class="change-meta"><span>🎯 P0</span><span>📦 Sidebar + DeviceList</span></div>
+</div>
+<div class="content">
+
+<div class="section">
+  <div class="section-title orange">2.1 改动概述（含 3 个子改动）</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:55px">#</th><th style="width:180px">子改动</th><th>说明</th><th style="width:70px">优先级</th></tr>
+      <tr><td><span class="sub-change a">2-A</span></td><td>设备互联去掉二级展开</td><td>点击直接打开群聊 session（deviceId = ACCOUNT_ALL）</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td><span class="sub-change b">2-B</span></td><td>移除"模拟 Event"入口</td><td>内测版移除调试按钮 + 展开表单</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td><span class="sub-change c">2-C</span></td><td>对话记录过滤定时任务</td><td>定时任务 session 统一在"任务"页管理</td><td><span class="badge badge-red">P0</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title orange">2.2 侧边栏前后对比</div>
+  <div class="compare-grid">
+    <div class="compare-box">
+      <div class="compare-label before">❌ 改动前</div>
+      <div class="compare-content">
+        <div class="mock-sidebar">
+          <div class="mock-nav-item active"><span class="icon">➕</span><span class="label">新对话</span></div>
+          <div class="mock-nav-item"><span class="icon">🕐</span><span class="label">任务</span></div>
+          <div class="highlight-box" style="margin-top:4px;"><div class="highlight-tag">2-A</div>
+            <div class="mock-nav-item" style="margin-bottom:0;"><span class="icon">📱</span><span class="label">设备互联</span><span class="count">▼ 2/3</span></div>
+            <div class="mock-sub-items">
+              <div class="mock-sub-item"><div class="sub-icon" style="background:#f3e8ff;">👥</div><span>群聊</span></div>
+              <div class="mock-sub-item"><div class="sub-icon" style="background:#f0f0f5;">💻</div><span>我的电脑</span></div>
+              <div class="mock-sub-item"><div class="sub-icon" style="background:#f0f0f5;">📱</div><span>小米15 Pro</span></div>
+            </div>
+          </div>
+          <div class="mock-nav-item"><span class="icon">📁</span><span class="label">我的文件</span></div>
+          <div class="highlight-box"><div class="highlight-tag">2-B</div><div class="mock-nav-item" style="margin-bottom:0;"><span class="icon">📡</span><span class="label">模拟 Event</span></div></div>
+          <div class="mock-nav-item"><span class="icon">⚙️</span><span class="label">设置</span></div>
+          <div class="mock-divider"></div>
+          <div class="mock-history-label">对话记录</div>
+          <div class="mock-session"><div class="sdot" style="background:#6366f1;"></div><span class="stitle">帮我整理桌面文件</span><span class="stime">14:32</span></div>
+          <div class="highlight-box"><div class="highlight-tag">2-C</div><div class="mock-session" style="margin:0;"><div class="sdot" style="background:#f59e0b;"></div><span class="stitle">⏰ 每日下载文件夹清理</span><span class="stime">昨天</span></div></div>
+          <div class="mock-session"><div class="sdot" style="background:#10b981;"></div><span class="stitle">生成周报 PPT</span><span class="stime">昨天</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="compare-box">
+      <div class="compare-label after">✅ 改动后</div>
+      <div class="compare-content">
+        <div class="mock-sidebar">
+          <div class="mock-nav-item active"><span class="icon">➕</span><span class="label">新对话</span></div>
+          <div class="mock-nav-item"><span class="icon">🕐</span><span class="label">任务</span></div>
+          <div class="highlight-box-green"><div class="highlight-tag-green">✅ 直接跳群聊</div><div class="mock-nav-item" style="margin-bottom:0;"><span class="icon">📱</span><span class="label">设备互联</span></div></div>
+          <div class="mock-nav-item"><span class="icon">📁</span><span class="label">我的文件</span></div>
+          <div class="mock-nav-item"><span class="icon">⚙️</span><span class="label">设置</span></div>
+          <div class="mock-divider"></div>
+          <div class="mock-history-label">对话记录</div>
+          <div class="mock-session"><div class="sdot" style="background:#6366f1;"></div><span class="stitle">帮我整理桌面文件</span><span class="stime">14:32</span></div>
+          <div class="mock-session"><div class="sdot" style="background:#10b981;"></div><span class="stitle">生成周报 PPT</span><span class="stime">昨天</span></div>
+          <div style="text-align:center;padding:12px 0 4px;"><span style="font-size:10px;color:#bbb;">✨ 更干净的对话列表</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title orange">2.3 代码改动指引</div>
+  <div class="card"><div class="sub-change a">2-A</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#f59e0b;">1</div><div><div class="step-title">Sidebar.tsx — 设备互联改为直接跳群聊</div><div class="step-desc">src/renderer/components/Sidebar.tsx</div></div></div>
+    <div class="code-block"><div class="code-header"><span class="code-file">Sidebar.tsx — 约第 175-185 行</span><span class="code-lang">tsx</span></div>
+      <pre><code><span class="hl-del">- &lt;DeviceList isCollapsed={isCollapsed} onDeviceDoubleClick={handleDeviceDoubleClick} /&gt;</span>
+<span class="hl-add">+ &lt;button onClick={() =&gt; handleDeviceDoubleClick({</span>
+<span class="hl-add">+   deviceId: 'ACCOUNT_ALL', deviceName: '群聊', online: true, deviceType: 'pc'</span>
+<span class="hl-add">+ } as any)} className={`${btnBase} ...`}&gt;</span>
+<span class="hl-add">+   &lt;MonitorSmartphone className="h-4 w-4 shrink-0" /&gt;</span>
+<span class="hl-add">+   &lt;span className={labelClass}&gt;{i18nService.t('deviceLink')}&lt;/span&gt;</span>
+<span class="hl-add">+ &lt;/button&gt;</span></code></pre></div>
+    <div class="note-box info"><span class="note-icon">💡</span><div><code>handleDeviceDoubleClick</code> 已有完整逻辑：查找/创建 ACCOUNT_ALL session → loadSession 跳转。直接复用。</div></div>
+  </div>
+  <div class="card"><div class="sub-change b">2-B</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#f59e0b;">2</div><div><div class="step-title">Sidebar.tsx — 移除模拟 Event 按钮及表单</div><div class="step-desc">删除 state 声明 + handleSimulateEvent + JSX</div></div></div>
+    <div class="note-box warn"><span class="note-icon">⚠️</span><div>仅删除 Sidebar UI 入口。后端 IPC handler <code>groupTask:simulateEvent</code> 保留，方便 DevTools 调试。</div></div>
+  </div>
+  <div class="card"><div class="sub-change c">2-C</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#f59e0b;">3</div><div><div class="step-title">AgentSessionList.tsx — 过滤定时任务类 session</div><div class="step-desc">src/renderer/components/agent/AgentSessionList.tsx</div></div></div>
+    <div class="code-block"><div class="code-header"><span class="code-file">AgentSessionList.tsx — groups useMemo</span><span class="code-lang">tsx</span></div>
+      <pre><code><span class="hl-add">+ const filteredSessions = sessions.filter(s =&gt; !s.scheduledTaskId);</span>
+<span class="hl-comment">// 后续 pinned/unpinned 基于 filteredSessions 而非 sessions</span></code></pre></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title orange">2.4 验收标准</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:40px">#</th><th style="width:50px">子项</th><th>验收项</th><th style="width:70px">优先级</th></tr>
+      <tr><td>1</td><td><span class="badge badge-yellow">2-A</span></td><td>点击"设备互联"直接打开群聊会话</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>2</td><td><span class="badge badge-red">2-B</span></td><td>侧边栏不再显示"📡 模拟 Event"按钮</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>3</td><td><span class="badge badge-blue">2-C</span></td><td>对话记录中不出现定时任务 session</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>4</td><td><span class="badge badge-blue">2-C</span></td><td>定时任务在"任务"页仍可正常管理</td><td><span class="badge badge-red">P0</span></td></tr>
+    </table>
+  </div>
+</div>
+
+</div><!-- end content -->
+</div><!-- end tab-2 -->
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                    TAB 3 - 移除标题 Tag                       ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-3">
+
+<div class="change-header" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+  <div class="change-tag">改动点 #3</div>
+  <h2>移除会话标题旁的 Tag 标签</h2>
+  <p>去掉"沙箱""本地""设备互联"等技术标签，保留"群聊"标签</p>
+  <div class="change-meta"><span>🎯 P0</span><span>📦 AgentSessionDetail Header</span></div>
+</div>
+<div class="content">
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#ef4444;">3.1 改动概述</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:130px">项目</th><th>说明</th></tr>
+      <tr><td>当前状态</td><td>标题右侧显示 <span class="badge badge-green" style="font-size:10px;">沙箱</span> <span class="badge badge-yellow" style="font-size:10px;">本地</span> <span class="badge badge-blue" style="font-size:10px;">设备互联</span> 等技术标签</td></tr>
+      <tr><td>目标状态</td><td>仅保留"群聊"标签（有业务含义），其余全部移除</td></tr>
+      <tr><td>涉及文件</td><td><code>AgentSessionDetail.tsx</code>（约第 1905-1924 行）</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#ef4444;">3.2 界面前后对比</div>
+  <div class="compare-grid">
+    <div class="compare-box">
+      <div class="compare-label before">❌ 改动前</div>
+      <div class="compare-content">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:#f5f5f5;border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:14px;font-weight:600;">生成一份小米换机的说明文档</span>
+            <span style="padding:2px 8px;border-radius:20px;background:rgba(16,185,129,0.1);color:#10b981;font-size:10px;font-weight:600;">沙箱</span>
+          </div>
+          <div style="background:#f5f5f5;border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:14px;font-weight:600;">帮我整理桌面文件</span>
+            <span style="padding:2px 8px;border-radius:20px;background:rgba(245,158,11,0.1);color:#f59e0b;font-size:10px;font-weight:600;">本地</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="compare-box">
+      <div class="compare-label after">✅ 改动后</div>
+      <div class="compare-content">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:#f5f5f5;border-radius:10px;padding:14px 18px;"><span style="font-size:14px;font-weight:600;">生成一份小米换机的说明文档</span></div>
+          <div style="background:#f5f5f5;border-radius:10px;padding:14px 18px;"><span style="font-size:14px;font-weight:600;">帮我整理桌面文件</span></div>
+        </div>
+        <div style="text-align:center;padding:10px 0 0;"><span style="font-size:10px;color:#bbb;">✨ 干净清爽</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#ef4444;">3.3 代码改动</div>
+  <div class="card">
+    <div class="code-block"><div class="code-header"><span class="code-file">AgentSessionDetail.tsx — 删除 3 段 Badge</span><span class="code-lang">tsx</span></div>
+      <pre><code><span class="hl-del">- {agentConfig.executionMode === 'lightweight' && (&lt;span ...&gt;沙箱&lt;/span&gt;)}</span>
+<span class="hl-del">- {agentConfig.executionMode === 'local' && (&lt;span ...&gt;本地&lt;/span&gt;)}</span>
+<span class="hl-del">- {currentSession.deviceId && deviceId !== 'ACCOUNT_ALL' && (&lt;span ...&gt;设备互联&lt;/span&gt;)}</span>
+<span class="hl-comment">// 保留"群聊"Badge：</span>
+  {currentSession.deviceId === 'ACCOUNT_ALL' && (&lt;span ...&gt;群聊&lt;/span&gt;)}</code></pre></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#ef4444;">3.4 验收标准</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:40px">#</th><th>验收项</th><th style="width:70px">优先级</th></tr>
+      <tr><td>1</td><td>标题旁不再显示"沙箱""本地""设备互联"标签</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>2</td><td>群聊会话仍显示"群聊"标签</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>3</td><td>执行模式功能本身不受影响</td><td><span class="badge badge-red">P0</span></td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</div><!-- end tab-3 -->
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                    TAB 4 - 新手引导内嵌                        ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-4">
+
+<div class="change-header" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
+  <div class="change-tag">改动点 #4</div>
+  <h2>新手引导改为对话内嵌</h2>
+  <p>取消全屏弹窗式引导（BootstrapSessionModal），改为主对话界面内直接发起引导对话</p>
+  <div class="change-meta"><span>🎯 P0</span><span>📦 Onboarding 流程</span></div>
+</div>
+<div class="content">
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#8b5cf6;">4.1 改动概述</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:130px">项目</th><th>说明</th></tr>
+      <tr><td>当前状态</td><td>3 步全屏弹窗：隐私政策 → 登录等待 → BootstrapSessionModal（全屏对话窗口）</td></tr>
+      <tr><td>目标状态</td><td>隐私政策和登录保持不变。第 3 步取消 Modal，在主界面对话区域自动发起引导 session</td></tr>
+      <tr><td>涉及文件</td><td><code>OnboardingFlow.tsx</code>（跳过 BOOTSTRAP Modal）、<code>AgentView.tsx</code>（自动发起引导对话）</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#8b5cf6;">4.2 体验前后对比</div>
+  <div class="compare-grid">
+    <div class="compare-box">
+      <div class="compare-label before">❌ 改动前：全屏弹窗</div>
+      <div class="compare-content">
+        <div style="background:#1a1a2e;border-radius:12px;padding:20px;color:#fff;position:relative;min-height:240px;">
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);border-radius:12px;z-index:1;"></div>
+          <div style="position:relative;z-index:2;background:#fff;border-radius:14px;margin:16px auto;max-width:90%;padding:16px;">
+            <div style="font-size:14px;font-weight:600;color:#1a1a2e;border-bottom:1px solid #f0f0f5;padding-bottom:10px;margin-bottom:12px;">开始使用</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="align-self:flex-start;background:#f5f5f5;border-radius:10px;padding:8px 12px;font-size:11px;color:#555;max-width:75%;">你好！我是 miclaw...</div>
+              <div style="align-self:flex-end;background:#667eea;border-radius:10px;padding:8px 12px;font-size:11px;color:#fff;">你好呀 👋</div>
+            </div>
+          </div>
+          <div style="position:absolute;bottom:6px;left:0;right:0;text-align:center;z-index:0;"><span style="font-size:9px;color:rgba(255,255,255,0.2);">← 主界面被完全遮挡 →</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="compare-box">
+      <div class="compare-label after">✅ 改动后：主界面内嵌</div>
+      <div class="compare-content">
+        <div style="background:#f5f5f5;border-radius:12px;padding:20px;min-height:240px;display:flex;flex-direction:column;">
+          <div style="text-align:center;margin-bottom:16px;">
+            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ff6b35,#7b68ee);margin:0 auto 6px;"></div>
+            <div style="font-size:13px;font-weight:600;background:linear-gradient(90deg,#667eea,#764ba2);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">我是miclaw</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
+            <div style="align-self:flex-start;background:#fff;border-radius:10px;padding:8px 12px;font-size:11px;color:#555;max-width:75%;border:1px solid #e8e8ef;">你好！让我来帮你熟悉一下...</div>
+            <div style="align-self:flex-end;background:#667eea;border-radius:10px;padding:8px 12px;font-size:11px;color:#fff;">你好呀 👋</div>
+          </div>
+          <div style="text-align:center;padding:8px 0 0;"><span style="font-size:10px;color:#bbb;">↑ 正常对话界面，无遮挡</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#8b5cf6;">4.3 代码改动</div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#8b5cf6;">1</div><div><div class="step-title">OnboardingFlow.tsx — BOOTSTRAP 步骤跳过 Modal</div><div class="step-desc">BOOTSTRAP 步骤直接 complete + 设置 bootstrapPending 标记</div></div></div>
+    <div class="code-block"><div class="code-header"><span class="code-file">OnboardingFlow.tsx</span><span class="code-lang">tsx</span></div>
+      <pre><code><span class="hl-del">- if (!onboarding.bootstrapCompleted) { setCurrentStep('BOOTSTRAP'); return; }</span>
+<span class="hl-add">+ if (!onboarding.bootstrapCompleted) {</span>
+<span class="hl-add">+   await configService.updateConfig({</span>
+<span class="hl-add">+     onboarding: { ...onboarding, bootstrapCompleted: true, bootstrapPending: true }</span>
+<span class="hl-add">+   });</span>
+<span class="hl-add">+   onComplete(); return;</span>
+<span class="hl-add">+ }</span></code></pre></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#8b5cf6;">2</div><div><div class="step-title">AgentView.tsx — 自动发起引导对话</div><div class="step-desc">检测 bootstrapPending，自动 startSession</div></div></div>
+    <div class="code-block"><div class="code-header"><span class="code-file">AgentView.tsx — useEffect</span><span class="code-lang">tsx</span></div>
+      <pre><code><span class="hl-add">+ useEffect(() =&gt; {</span>
+<span class="hl-add">+   const config = configService.getConfig();</span>
+<span class="hl-add">+   if (config.onboarding?.bootstrapPending && !currentSessionId) {</span>
+<span class="hl-add">+     agentService.startSession({ prompt: bootstrapPrompt, ... });</span>
+<span class="hl-add">+     configService.updateConfig({ onboarding: { ...config.onboarding, bootstrapPending: false } });</span>
+<span class="hl-add">+   }</span>
+<span class="hl-add">+ }, [currentSessionId]);</span></code></pre></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#8b5cf6;">4.4 验收标准</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:40px">#</th><th>验收项</th><th style="width:70px">优先级</th></tr>
+      <tr><td>1</td><td>完成隐私政策+登录后，不再弹出全屏引导弹窗</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>2</td><td>进入主界面后自动发起引导对话</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>3</td><td>引导完成后标记清除，不再重复引导</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>4</td><td>隐私政策弹窗和登录等待不受影响</td><td><span class="badge badge-red">P0</span></td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</div><!-- end tab-4 -->
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                    TAB 5 - 任务页还原设计稿                     ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-5">
+
+<div class="change-header" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);">
+  <div class="change-tag">改动点 #5</div>
+  <h2>任务页面还原设计稿</h2>
+  <p>Tab 切换器改为胶囊式 + 列表项改为圆角卡片，对齐 Figma 设计稿</p>
+  <div class="change-meta"><span>🎯 P0</span><span>📦 ScheduledTasksView</span><span>🎨 Figma: Miclaw Mac/Win</span></div>
+</div>
+<div class="content">
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#06b6d4;">5.1 设计稿关键参数</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:160px">组件</th><th>Figma 参数</th></tr>
+      <tr><td>Tab 容器</td><td><code>bg: #FFF; border-radius: 30px; height: 60px; padding: 6px;</code></td></tr>
+      <tr><td>Tab 选中项</td><td><code>bg: rgba(0,0,0,0.05); border-radius: 24px; font-weight: 450;</code></td></tr>
+      <tr><td>任务列表项</td><td><code>bg: #FFF; border-radius: 28px; height: 91px;</code></td></tr>
+      <tr><td>页面背景</td><td><code>#F2F2F2</code></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#06b6d4;">5.2 界面前后对比</div>
+  <div class="compare-grid">
+    <div class="compare-box">
+      <div class="compare-label before">❌ 改动前：下划线 Tab + 行列表</div>
+      <div class="compare-content">
+        <div style="background:#f5f5f5;border-radius:12px;padding:18px;min-height:300px;">
+          <div style="display:flex;border-bottom:1px solid #e5e7eb;margin-bottom:14px;">
+            <div style="padding:7px 14px;font-size:12px;font-weight:500;position:relative;">任务<div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#667eea;"></div></div>
+            <div style="padding:7px 14px;font-size:12px;color:#999;">历史</div>
+          </div>
+          <div style="display:flex;align-items:center;padding:9px 10px;border-bottom:1px solid #f0f0f5;"><div style="flex:1;"><div style="font-size:12px;color:#333;">每日科技新闻简报</div><div style="font-size:10px;color:#999;margin-top:2px;">执行成功 | 2026/3/12</div></div></div>
+          <div style="display:flex;align-items:center;padding:9px 10px;border-bottom:1px solid #f0f0f5;"><div style="flex:1;"><div style="font-size:12px;color:#333;">每天6点归档文件</div><div style="font-size:10px;color:#999;margin-top:2px;">执行成功 | 2026/3/11</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="compare-box">
+      <div class="compare-label after">✅ 改动后：胶囊 Tab + 卡片列表</div>
+      <div class="compare-content">
+        <div style="background:#f2f2f2;border-radius:12px;padding:18px;min-height:300px;">
+          <div style="background:#fff;border-radius:30px;padding:5px;display:flex;margin-bottom:16px;max-width:300px;margin-left:auto;margin-right:auto;">
+            <div style="flex:1;padding:8px 0;text-align:center;font-size:12px;font-weight:500;color:#000;background:rgba(0,0,0,0.05);border-radius:24px;">任务</div>
+            <div style="flex:1;padding:8px 0;text-align:center;font-size:12px;color:rgba(0,0,0,0.6);">历史</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="background:#fff;border-radius:20px;padding:14px 18px;"><div style="font-size:14px;color:#000;">每日科技新闻简报</div><div style="font-size:11px;color:rgba(0,0,0,0.4);margin-top:3px;">执行成功｜2026/3/12 14:20:08</div></div>
+            <div style="background:#fff;border-radius:20px;padding:14px 18px;"><div style="font-size:14px;color:#000;">每天6点归档文件</div><div style="font-size:11px;color:rgba(0,0,0,0.4);margin-top:3px;">执行成功｜2026/3/11 18:00:02</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#06b6d4;">5.3 代码改动</div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#06b6d4;">1</div><div><div class="step-title">ScheduledTasksView.tsx — Tab 改为胶囊式 + 背景色 #F2F2F2</div></div></div>
+    <div class="code-block"><div class="code-header"><span class="code-file">ScheduledTasksView.tsx</span><span class="code-lang">tsx</span></div>
+      <pre><code><span class="hl-add">+ &lt;div className="flex bg-white rounded-[30px] p-1.5 max-w-md mx-auto"&gt;</span>
+<span class="hl-add">+   &lt;button className={`flex-1 py-2.5 text-center text-sm rounded-[24px] ${</span>
+<span class="hl-add">+     active ? 'bg-black/5 font-medium text-black' : 'text-black/60'</span>
+<span class="hl-add">+   }`}&gt;...&lt;/button&gt;</span>
+<span class="hl-add">+ &lt;/div&gt;</span></code></pre></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#06b6d4;">2</div><div><div class="step-title">TaskList.tsx — 列表项改为圆角卡片</div></div></div>
+    <div class="code-block"><div class="code-header"><span class="code-file">TaskList.tsx</span><span class="code-lang">tsx</span></div>
+      <pre><code><span class="hl-add">+ &lt;div className="bg-white rounded-[28px] px-6 py-4 hover:shadow-sm"&gt;</span>
+<span class="hl-add">+   &lt;div className="text-base text-black"&gt;{task.name}&lt;/div&gt;</span>
+<span class="hl-add">+   &lt;div className="text-sm text-black/40 mt-1"&gt;{statusText}｜{lastRunTime}&lt;/div&gt;</span>
+<span class="hl-add">+ &lt;/div&gt;</span></code></pre></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#06b6d4;">5.4 验收标准</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:40px">#</th><th>验收项</th><th style="width:70px">优先级</th></tr>
+      <tr><td>1</td><td>Tab 为胶囊式：白底圆角容器，选中项 <code>bg-black/5</code></td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>2</td><td>列表项为白底圆角卡片（<code>border-radius: 28px</code>）</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>3</td><td>页面背景色 <code>#F2F2F2</code></td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>4</td><td>Tab 切换功能正常</td><td><span class="badge badge-red">P0</span></td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</div><!-- end tab-5 -->
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                    TAB 6 - 移除文件夹概念                      ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-6">
+
+<div class="change-header" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+  <div class="change-tag">改动点 #6</div>
+  <h2>移除文件夹概念，简化用户心智</h2>
+  <p>取消所有文件夹选择器 UI，生成的文件统一在"我的文件"中查看</p>
+  <div class="change-meta"><span>🎯 P0</span><span>📦 输入框 + 会话标题栏</span></div>
+</div>
+<div class="content">
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#10b981;">6.1 改动概述</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:130px">项目</th><th>说明</th></tr>
+      <tr><td>产品理念</td><td>用户不需要理解"工作目录"概念。如需指定路径，自然语言描述即可</td></tr>
+      <tr><td>移除项</td><td>① 输入框下方 <code>📁 project +</code> 选择器 ② 标题栏 <code>📁 project</code> 标签 ③ 发送前文件夹校验</td></tr>
+      <tr><td>涉及文件</td><td><code>AgentView.tsx</code>、<code>AgentPromptInput.tsx</code>、<code>AgentSessionDetail.tsx</code>、<code>agentService.ts</code></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#10b981;">6.2 代码改动</div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#10b981;">1</div><div><div class="step-title">AgentView.tsx — 删除 showFolderSelector={true}</div></div></div>
+    <div class="code-block"><div class="code-header"><span class="code-file">AgentView.tsx — 约第 441 行</span><span class="code-lang">tsx</span></div>
+      <pre><code><span class="hl-del">- showFolderSelector={true}</span>
+<span class="hl-comment">// 直接删除此 prop，默认值已为 false</span></code></pre></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#10b981;">2</div><div><div class="step-title">AgentPromptInput.tsx — 移除文件夹校验</div></div></div>
+    <div class="code-block"><div class="code-header"><span class="code-file">AgentPromptInput.tsx — 约第 292 行</span><span class="code-lang">tsx</span></div>
+      <pre><code><span class="hl-del">- if (showFolderSelector && !workingDirectory?.trim()) {</span>
+<span class="hl-del">-   setShowFolderRequiredWarning(true); return;</span>
+<span class="hl-del">- }</span></code></pre></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#10b981;">3</div><div><div class="step-title">AgentSessionDetail.tsx — 移除标题栏文件夹按钮</div></div></div>
+    <div class="note-box info"><span class="note-icon">💡</span><div>删除 Header 右侧的 FolderIcon 按钮（约第 1927-1940 行）。</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#10b981;">4</div><div><div class="step-title">后端 — 设置默认工作目录</div></div></div>
+    <div class="note-box warn"><span class="note-icon">⚠️</span><div>建议默认 <code>~/miclaw-files</code> 或 <code>~/Documents/miclaw</code>，需与研发确认。</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#10b981;">6.3 验收标准</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:40px">#</th><th>验收项</th><th style="width:70px">优先级</th></tr>
+      <tr><td>1</td><td>输入框下方不再显示文件夹选择器</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>2</td><td>标题栏不再显示文件夹标签</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>3</td><td>发送消息不再因未选文件夹被阻断</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>4</td><td>生成的文件在"我的文件"页面可查看</td><td><span class="badge badge-red">P0</span></td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</div><!-- end tab-6 -->
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                    TAB 7 - 设备互联改造                        ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-7">
+
+<div class="change-header" style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);">
+  <div class="change-tag">改动点 #7</div>
+  <h2>设备互联页面改造（群聊页）</h2>
+  <p>UI 还原设计稿（待提供）+ 禁止用户在窗口内发送消息</p>
+  <div class="change-meta"><span>🎯 P0</span><span>📦 AgentSessionDetail（ACCOUNT_ALL）</span></div>
+</div>
+<div class="content">
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#f97316;">7.1 改动概述</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:130px">项目</th><th>说明</th></tr>
+      <tr><td>子改动</td><td><span class="sub-change a">7-A</span> UI 还原设计稿 — <span class="badge badge-gray">设计稿待定</span><br><span class="sub-change b">7-B</span> 禁止用户发送消息 — 输入框 + 发送按钮置灰</td></tr>
+      <tr><td>产品理念</td><td>设备互联页面是多设备 miclaw 聊天记录展示窗口，用户只需查看</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#f97316;">7.2 界面对比（7-B）</div>
+  <div class="compare-grid">
+    <div class="compare-box">
+      <div class="compare-label before">❌ 改动前：输入框可用</div>
+      <div class="compare-content">
+        <div style="background:#f5f5f5;border-radius:12px;padding:16px;min-height:220px;display:flex;flex-direction:column;">
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+            <div style="display:flex;gap:6px;"><div style="width:24px;height:24px;border-radius:50%;background:#e0e7ff;display:flex;align-items:center;justify-content:center;font-size:10px;">📱</div><div style="background:#fff;border-radius:10px;padding:8px 12px;font-size:11px;color:#555;border:1px solid #e8e8ef;">手机已完成照片提取</div></div>
+          </div>
+          <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:11px;color:#bbb;">继续对话...</span>
+            <div style="width:24px;height:24px;border-radius:50%;background:#667eea;display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:10px;">↑</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="compare-box">
+      <div class="compare-label after">✅ 改动后：输入框置灰</div>
+      <div class="compare-content">
+        <div style="background:#f5f5f5;border-radius:12px;padding:16px;min-height:220px;display:flex;flex-direction:column;">
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+            <div style="display:flex;gap:6px;"><div style="width:24px;height:24px;border-radius:50%;background:#e0e7ff;display:flex;align-items:center;justify-content:center;font-size:10px;">📱</div><div style="background:#fff;border-radius:10px;padding:8px 12px;font-size:11px;color:#555;border:1px solid #e8e8ef;">手机已完成照片提取</div></div>
+          </div>
+          <div style="background:#f0f0f0;border-radius:12px;border:1px solid #e5e7eb;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;opacity:0.7;">
+            <span style="font-size:10px;color:#aaa;">当前为多设备 miclaw 展示窗口，你可以在此查看设备之间的聊天记录</span>
+            <div style="width:24px;height:24px;border-radius:50%;background:#d4d4d4;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#f97316;">7.3 代码改动</div>
+  <div class="card">
+    <div class="code-block"><div class="code-header"><span class="code-file">AgentSessionDetail.tsx — Input Area</span><span class="code-lang">tsx</span></div>
+      <pre><code><span class="hl-add">+ placeholder={currentSession.deviceId === 'ACCOUNT_ALL'</span>
+<span class="hl-add">+   ? '当前为多设备 miclaw 展示窗口，你可以在此查看设备之间的聊天记录'</span>
+<span class="hl-add">+   : i18nService.t('agentContinuePlaceholder')}</span>
+<span class="hl-add">+ disabled={currentSession.deviceId === 'ACCOUNT_ALL'}</span></code></pre></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#f97316;">7.4 验收标准</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:40px">#</th><th>验收项</th><th style="width:70px">优先级</th></tr>
+      <tr><td>1</td><td>群聊页面输入框置灰，不可输入</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>2</td><td>发送按钮置灰，不可点击</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>3</td><td>显示只读提示文案</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>4</td><td>已有聊天记录正常展示</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>5</td><td>7-A UI 还原（设计稿确认后验收）</td><td><span class="badge badge-yellow">P1</span></td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</div><!-- end tab-7 -->
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                    TAB 8 - 我的文件优化                        ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-8">
+
+<div class="change-header" style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);">
+  <div class="change-tag">改动点 #8</div>
+  <h2>我的文件页面优化</h2>
+  <p>统一设计语言，对齐任务页面的圆角卡片 + 胶囊筛选风格</p>
+  <div class="change-meta"><span>🎯 P1</span><span>📦 MyFilesView</span><span>⚠️ 依赖 UI 出图</span></div>
+</div>
+<div class="content">
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#ec4899;">8.1 改动概述</div>
+  <div class="card">
+    <div class="note-box warn"><span class="note-icon">⚠️</span><div>以下方案基于任务页风格推演，作为预开发参考。最终以 UI 设计稿为准。</div></div>
+    <table class="info-table" style="margin-top:14px;">
+      <tr><th style="width:130px">项目</th><th>说明</th></tr>
+      <tr><td>目标</td><td>① 筛选器改为胶囊切换器 ② 文件列表项改为白底圆角卡片 ③ 背景色 <code>#F2F2F2</code></td></tr>
+      <tr><td>涉及文件</td><td><code>MyFilesView.tsx</code></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#ec4899;">8.2 界面对比（参考方案）</div>
+  <div class="compare-grid">
+    <div class="compare-box">
+      <div class="compare-label before">❌ 改动前</div>
+      <div class="compare-content">
+        <div style="background:#fff;border-radius:12px;padding:14px;min-height:280px;">
+          <div style="display:flex;gap:5px;margin-bottom:10px;">
+            <div style="padding:3px 10px;border-radius:20px;background:#667eea;color:#fff;font-size:10px;">全部</div>
+            <div style="padding:3px 10px;border-radius:20px;background:#f3f4f6;color:#888;font-size:10px;">MD</div>
+            <div style="padding:3px 10px;border-radius:20px;background:#f3f4f6;color:#888;font-size:10px;">HTML</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid #f8f8f8;">
+            <div style="width:28px;height:28px;border-radius:6px;background:rgba(102,126,234,0.1);display:flex;align-items:center;justify-content:center;font-size:12px;">📄</div>
+            <div><div style="font-size:12px;color:#333;">小米换机说明.md</div><div style="font-size:9px;color:#999;">Markdown · 2.3 KB</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="compare-box">
+      <div class="compare-label after">✅ 改动后（参考）</div>
+      <div class="compare-content">
+        <div style="background:#f2f2f2;border-radius:12px;padding:14px;min-height:280px;">
+          <div style="background:#fff;border-radius:20px;padding:3px;display:flex;margin-bottom:12px;">
+            <div style="flex:1;padding:6px 0;text-align:center;font-size:10px;font-weight:500;color:#000;background:rgba(0,0,0,0.05);border-radius:18px;">全部</div>
+            <div style="flex:1;padding:6px 0;text-align:center;font-size:10px;color:rgba(0,0,0,0.5);">MD</div>
+            <div style="flex:1;padding:6px 0;text-align:center;font-size:10px;color:rgba(0,0,0,0.5);">HTML</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="background:#fff;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:rgba(102,126,234,0.08);display:flex;align-items:center;justify-content:center;font-size:14px;">📄</div>
+              <div><div style="font-size:13px;color:#000;">小米换机说明.md</div><div style="font-size:10px;color:rgba(0,0,0,0.4);margin-top:2px;">Markdown · 2.3 KB · 14:32</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#ec4899;">8.3 验收标准</div>
+  <div class="card">
+    <div class="note-box warn" style="margin-bottom:14px;"><span class="note-icon">⚠️</span><div>以下为参考方案，最终以 UI 设计稿为准。</div></div>
+    <table class="info-table">
+      <tr><th style="width:40px">#</th><th>验收项</th><th style="width:70px">优先级</th></tr>
+      <tr><td>1</td><td>背景色 <code>#F2F2F2</code>，与任务页统一</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>2</td><td>筛选器为胶囊式</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>3</td><td>文件列表项为白底圆角卡片</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>4</td><td>最终对齐 UI 设计稿</td><td><span class="badge badge-red">P0</span></td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</div><!-- end tab-8 -->
+
+<!-- ╔══════════════════════════════════════════════════════════════╗ -->
+<!-- ║                    TAB 9 - 侧边栏滚动优化                      ║ -->
+<!-- ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-9">
+
+<div class="change-header" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+  <div class="change-tag">改动点 #9</div>
+  <h2>侧边栏滚动逻辑优化</h2>
+  <p>导航项随列表滚动消失，仅保留"新建对话"置顶 + "对话记录"标签 sticky</p>
+  <div class="change-meta"><span>🎯 P0</span><span>📦 Sidebar.tsx</span></div>
+</div>
+<div class="content">
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#6366f1;">9.1 改动概述</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:130px">项目</th><th>说明</th></tr>
+      <tr><td>当前问题</td><td>侧边栏中 <strong>任务、设备互联、我的文件、设置</strong> 4 个导航项占据固定空间，导致下方对话记录滚动区域非常小，尤其在窗口高度较矮时几乎无法浏览历史会话</td></tr>
+      <tr><td>目标状态</td><td>① <strong>"新建对话"按钮</strong>始终置顶，不参与滚动<br>② <strong>任务/设备互联/我的文件/设置</strong>放入滚动容器，向上滚动时随列表一起消失<br>③ <strong>"对话记录"标签</strong>在滚动容器内 <code>position: sticky; top: 0</code>，始终可见</td></tr>
+      <tr><td>涉及文件</td><td><code>Sidebar.tsx</code></td></tr>
+      <tr><td>改动类型</td><td><span class="badge badge-yellow">布局重构</span> 仅调整 DOM 层级和 CSS，不涉及业务逻辑</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#6366f1;">9.2 界面前后对比</div>
+  <div class="compare-grid">
+    <div class="compare-box">
+      <div class="compare-label before">❌ 改动前：滚动区域太小</div>
+      <div class="compare-content">
+        <div class="mock-sidebar" style="height:420px;display:flex;flex-direction:column;">
+          <!-- Header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px 8px;">
+            <div style="display:flex;gap:4px;"><div style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></div><div style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></div><div style="width:10px;height:10px;border-radius:50%;background:#28c840;"></div></div>
+            <div style="width:20px;height:20px;border-radius:6px;background:#f0f0f5;display:flex;align-items:center;justify-content:center;font-size:10px;">☰</div>
+          </div>
+          <!-- 固定导航区 -->
+          <div style="border:2px dashed #ef4444;border-radius:10px;padding:4px;position:relative;margin-bottom:6px;">
+            <div style="position:absolute;top:-8px;right:8px;background:#ef4444;color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;">固定不滚动</div>
+            <div class="mock-nav-item active"><span class="icon">➕</span><span class="label">新建对话</span></div>
+            <div class="mock-nav-item"><span class="icon">🕐</span><span class="label">任务</span></div>
+            <div class="mock-nav-item"><span class="icon">📱</span><span class="label">设备互联</span></div>
+            <div class="mock-nav-item"><span class="icon">📁</span><span class="label">我的文件</span></div>
+            <div class="mock-nav-item"><span class="icon">⚙️</span><span class="label">设置</span></div>
+          </div>
+          <!-- 滚动区 -->
+          <div style="flex:1;border:2px dashed #f59e0b;border-radius:10px;padding:4px;position:relative;overflow:hidden;min-height:0;">
+            <div style="position:absolute;top:-8px;right:8px;background:#f59e0b;color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;">仅此区域可滚动 ↕</div>
+            <div class="mock-history-label" style="margin-top:6px;">对话记录</div>
+            <div class="mock-session"><div class="sdot" style="background:#6366f1;"></div><span class="stitle">帮我整理桌面文件</span><span class="stime">14:32</span></div>
+            <div class="mock-session"><div class="sdot" style="background:#10b981;"></div><span class="stitle">生成周报 PPT</span><span class="stime">昨天</span></div>
+            <div style="text-align:center;padding:6px 0;"><span style="font-size:9px;color:#ccc;">... 更多会话被截断 ...</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="compare-box">
+      <div class="compare-label after">✅ 改动后：导航随滚动消失</div>
+      <div class="compare-content">
+        <div class="mock-sidebar" style="height:420px;display:flex;flex-direction:column;">
+          <!-- Header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px 8px;">
+            <div style="display:flex;gap:4px;"><div style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></div><div style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></div><div style="width:10px;height:10px;border-radius:50%;background:#28c840;"></div></div>
+            <div style="width:20px;height:20px;border-radius:6px;background:#f0f0f5;display:flex;align-items:center;justify-content:center;font-size:10px;">☰</div>
+          </div>
+          <!-- 新建对话 - 始终置顶 -->
+          <div style="border:2px dashed #16a34a;border-radius:10px;padding:4px;position:relative;margin-bottom:6px;">
+            <div style="position:absolute;top:-8px;right:8px;background:#16a34a;color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;">始终置顶</div>
+            <div class="mock-nav-item active"><span class="icon">➕</span><span class="label">新建对话</span></div>
+          </div>
+          <!-- 统一滚动区 -->
+          <div style="flex:1;border:2px dashed #6366f1;border-radius:10px;padding:4px;position:relative;overflow:hidden;min-height:0;">
+            <div style="position:absolute;top:-8px;right:8px;background:#6366f1;color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;z-index:2;">整体可滚动 ↕</div>
+            <div style="opacity:0.4;font-size:9px;text-align:center;color:#999;padding:2px 0;">↑ 向上滚动后消失 ↑</div>
+            <div class="mock-nav-item" style="opacity:0.4;"><span class="icon">🕐</span><span class="label" style="text-decoration:line-through;">任务</span></div>
+            <div class="mock-nav-item" style="opacity:0.4;"><span class="icon">📱</span><span class="label" style="text-decoration:line-through;">设备互联</span></div>
+            <div class="mock-nav-item" style="opacity:0.4;"><span class="icon">📁</span><span class="label" style="text-decoration:line-through;">我的文件</span></div>
+            <div class="mock-nav-item" style="opacity:0.4;"><span class="icon">⚙️</span><span class="label" style="text-decoration:line-through;">设置</span></div>
+            <!-- 对话记录 sticky -->
+            <div style="border:2px dashed #16a34a;border-radius:8px;padding:2px;position:relative;margin-top:4px;">
+              <div style="position:absolute;top:-8px;left:8px;background:#16a34a;color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;">sticky 置顶</div>
+              <div class="mock-history-label">对话记录</div>
+            </div>
+            <div class="mock-session"><div class="sdot" style="background:#6366f1;"></div><span class="stitle">帮我整理桌面文件</span><span class="stime">14:32</span></div>
+            <div class="mock-session"><div class="sdot" style="background:#10b981;"></div><span class="stitle">生成周报 PPT</span><span class="stime">昨天</span></div>
+            <div class="mock-session"><div class="sdot" style="background:#f59e0b;"></div><span class="stitle">小米 SU7 车机联动</span><span class="stime">周一</span></div>
+            <div class="mock-session"><div class="sdot" style="background:#ec4899;"></div><span class="stitle">写一封邮件给供应商</span><span class="stime">周日</span></div>
+            <div class="mock-session"><div class="sdot" style="background:#06b6d4;"></div><span class="stitle">翻译产品文档为英文</span><span class="stime">上周</span></div>
+            <div style="text-align:center;padding:4px 0;"><span style="font-size:9px;color:#bbb;">✨ 滚动空间大幅增加</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#6366f1;">9.3 代码改动指引</div>
+  <div class="card">
+    <p style="font-size:13px;color:#555;margin-bottom:16px;">核心思路：将导航项从固定区域移入滚动容器，"新建对话"保留在滚动容器外，"对话记录"标签设为 <code>sticky</code>。</p>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#6366f1;">1</div><div><div class="step-title">Sidebar.tsx — 布局重构</div><div class="step-desc">src/renderer/components/Sidebar.tsx</div></div></div>
+    <div class="code-block"><div class="code-header"><span class="code-file">Sidebar.tsx — 当前结构（简化）</span><span class="code-lang">tsx</span></div>
+      <pre><code><span class="hl-comment">// ===== 当前结构 =====</span>
+&lt;aside className="... flex flex-col overflow-hidden w-60"&gt;
+  <span class="hl-comment">{/* Header: traffic light + collapse */}</span>
+  &lt;div className="pt-1.5"&gt;...&lt;/div&gt;
+
+  <span class="hl-comment">{/* Nav items: 全部固定，不可滚动 */}</span>
+<span class="hl-del">  &lt;div className="px-2.5 space-y-0.5 mt-1.5"&gt;</span>
+<span class="hl-del">    &lt;button&gt;新建对话&lt;/button&gt;</span>
+<span class="hl-del">    &lt;button&gt;任务&lt;/button&gt;</span>
+<span class="hl-del">    &lt;DeviceList /&gt;</span>
+<span class="hl-del">    &lt;button&gt;我的文件&lt;/button&gt;</span>
+<span class="hl-del">    &lt;button&gt;设置&lt;/button&gt;</span>
+<span class="hl-del">  &lt;/div&gt;</span>
+
+  <span class="hl-comment">{/* Session history: 独立滚动区 */}</span>
+<span class="hl-del">  &lt;div className="flex-1 flex flex-col min-h-0 mt-4"&gt;</span>
+<span class="hl-del">    &lt;div className="flex-1 overflow-hidden"&gt;</span>
+<span class="hl-del">      &lt;div className="h-full overflow-y-auto px-2.5 pb-4"&gt;</span>
+<span class="hl-del">        &lt;div className="..."&gt;对话记录&lt;/div&gt;</span>
+<span class="hl-del">        &lt;AgentSessionList /&gt;</span>
+<span class="hl-del">      &lt;/div&gt;</span>
+<span class="hl-del">    &lt;/div&gt;</span>
+<span class="hl-del">  &lt;/div&gt;</span>
+&lt;/aside&gt;</code></pre></div>
+
+    <div class="code-block"><div class="code-header"><span class="code-file">Sidebar.tsx — 改动后结构</span><span class="code-lang">tsx</span></div>
+      <pre><code><span class="hl-comment">// ===== 改动后结构 =====</span>
+&lt;aside className="... flex flex-col overflow-hidden w-60"&gt;
+  <span class="hl-comment">{/* Header: traffic light + collapse — 不变 */}</span>
+  &lt;div className="pt-1.5"&gt;...&lt;/div&gt;
+
+  <span class="hl-comment">{/* ① 新建对话 — 保留在滚动容器外，始终可见 */}</span>
+<span class="hl-add">  &lt;div className="px-2.5 mt-1.5"&gt;</span>
+<span class="hl-add">    &lt;button&gt;新建对话&lt;/button&gt;</span>
+<span class="hl-add">  &lt;/div&gt;</span>
+
+  <span class="hl-comment">{/* ② 统一滚动容器：导航项 + 对话记录 */}</span>
+<span class="hl-add">  &lt;div className="flex-1 min-h-0 overflow-y-auto px-2.5 pb-4 mt-1"&gt;</span>
+
+    <span class="hl-comment">{/* 导航项 — 现在在滚动容器内，可被滚走 */}</span>
+<span class="hl-add">    &lt;div className="space-y-0.5"&gt;</span>
+<span class="hl-add">      &lt;button&gt;任务&lt;/button&gt;</span>
+<span class="hl-add">      &lt;DeviceList /&gt;</span>
+<span class="hl-add">      &lt;button&gt;我的文件&lt;/button&gt;</span>
+<span class="hl-add">      &lt;button&gt;设置&lt;/button&gt;</span>
+<span class="hl-add">    &lt;/div&gt;</span>
+
+    <span class="hl-comment">{/* ③ 对话记录标签 — sticky，滚动时吸顶 */}</span>
+<span class="hl-add">    &lt;div className="sticky top-0 z-10 bg-white dark:bg-miclaw-darkSurface</span>
+<span class="hl-add">                    px-2.5 pt-4 pb-2 text-xs font-medium</span>
+<span class="hl-add">                    text-[#8C9DB0] dark:text-miclaw-darkTextSecondary"&gt;</span>
+<span class="hl-add">      {i18nService.t('agentHistory')}</span>
+<span class="hl-add">    &lt;/div&gt;</span>
+
+    <span class="hl-comment">{/* 会话列表 */}</span>
+<span class="hl-add">    &lt;AgentSessionList ... /&gt;</span>
+
+<span class="hl-add">  &lt;/div&gt;</span>
+&lt;/aside&gt;</code></pre></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div class="step-num" style="background:#6366f1;">2</div><div><div class="step-title">关键 CSS 要点</div></div></div>
+    <table class="info-table">
+      <tr><th style="width:200px">属性</th><th>说明</th></tr>
+      <tr><td><code>flex-1 min-h-0 overflow-y-auto</code></td><td>统一滚动容器，占据剩余空间</td></tr>
+      <tr><td><code>sticky top-0 z-10</code></td><td>"对话记录"标签吸顶，需要设置 <code>bg-white</code> 防止内容穿透</td></tr>
+      <tr><td><code>bg-white dark:bg-miclaw-darkSurface</code></td><td>sticky 元素必须有背景色，否则滚动时文字会叠加显示</td></tr>
+    </table>
+    <div class="note-box warn" style="margin-top:14px;"><span class="note-icon">⚠️</span><div>sticky 元素的父容器必须是滚动容器本身（<code>overflow-y-auto</code> 的那个 div），不能再嵌套额外的 wrapper，否则 sticky 不生效。</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title" style="border-left-color:#6366f1;">9.4 验收标准</div>
+  <div class="card">
+    <table class="info-table">
+      <tr><th style="width:40px">#</th><th>验收项</th><th style="width:70px">优先级</th></tr>
+      <tr><td>1</td><td>"新建对话"按钮始终可见，不随滚动消失</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>2</td><td>向下滚动时，任务/设备互联/我的文件/设置随列表一起滚出视野</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>3</td><td>"对话记录"标签 sticky 吸顶，始终可见</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>4</td><td>对话记录滚动区域明显增大（窗口较矮时尤为明显）</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>5</td><td>导航项功能不受影响（点击任务/设备互联/我的文件/设置仍正常跳转）</td><td><span class="badge badge-red">P0</span></td></tr>
+      <tr><td>6</td><td>暗色模式下 sticky 标签背景色正确，无穿透</td><td><span class="badge badge-blue">P1</span></td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</div><!-- end tab-9 -->
+
+<!-- ===== Tab 切换 JS ===== -->
+<script>
+(function() {
+  const bar = document.getElementById('tabBar');
+  const btns = bar.querySelectorAll('.tab-btn');
+  const panels = document.querySelectorAll('.tab-panel');
+
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.tab;
+      btns.forEach(b => b.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + id).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  // Tab bar shadow on scroll
+  window.addEventListener('scroll', () => {
+    bar.classList.toggle('scrolled', window.scrollY > 10);
+  });
+})();
+</script>
+
+</body>
+</html>

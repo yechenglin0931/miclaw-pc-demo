@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>天气卡片 948×440</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#111}
+
+.card{
+  width:948px;height:440px;
+  transform-origin:top left;
+  position:absolute;top:0;left:0;
+  border-radius:40px;
+  overflow:hidden;
+  font-family:'Noto Sans SC',-apple-system,'PingFang SC',sans-serif;
+  background:linear-gradient(145deg, #1a2744 0%, #0f1a30 40%, #0c1424 100%);
+  display:flex;
+  padding:44px 52px;
+  position:relative;
+}
+
+.card::before{
+  content:'';position:absolute;
+  top:-60px;right:-40px;
+  width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle, rgba(250,204,21,0.12) 0%, rgba(251,146,60,0.06) 40%, transparent 70%);
+}
+
+/* 左侧 */
+.left{
+  flex:1;display:flex;flex-direction:column;
+  justify-content:space-between;
+  position:relative;z-index:1;
+}
+
+.location{
+  display:flex;align-items:center;gap:10px;
+}
+.location .pin{font-size:22px}
+.location span{
+  font-size:26px;font-weight:500;
+  color:rgba(255,255,255,0.55);
+}
+
+.temp-block{display:flex;flex-direction:column;gap:6px}
+.temp-row{display:flex;align-items:flex-start;gap:8px}
+.temp-num{
+  font-size:160px;font-weight:200;
+  color:rgba(255,255,255,0.95);
+  line-height:0.85;
+  letter-spacing:-8px;
+}
+.temp-unit{
+  font-size:40px;font-weight:300;
+  color:rgba(255,255,255,0.4);
+  margin-top:12px;
+}
+.temp-desc{
+  font-size:28px;font-weight:400;
+  color:rgba(255,255,255,0.45);
+}
+
+.temp-range{
+  display:flex;align-items:center;gap:20px;
+  font-size:24px;
+}
+.temp-range .hi{color:rgba(255,255,255,0.55)}
+.temp-range .lo{color:rgba(255,255,255,0.3)}
+.temp-range .sep{width:1px;height:20px;background:rgba(255,255,255,0.1)}
+
+/* 右侧 — 逐时 */
+.right{
+  width:380px;
+  display:flex;flex-direction:column;
+  justify-content:space-between;
+  position:relative;z-index:1;
+}
+
+.right-label{
+  font-size:20px;font-weight:500;
+  color:rgba(255,255,255,0.25);
+  text-align:right;
+  letter-spacing:0.5px;
+}
+
+.hourly{
+  display:flex;
+  justify-content:space-between;
+}
+.hour-col{
+  display:flex;flex-direction:column;
+  align-items:center;gap:12px;
+}
+.hour-col .h-time{font-size:22px;color:rgba(255,255,255,0.35);font-weight:400}
+.hour-col .h-icon{font-size:36px}
+.hour-col .h-temp{font-size:26px;font-weight:500;color:rgba(255,255,255,0.7)}
+.hour-col.now .h-time{color:rgba(250,204,21,0.7);font-weight:600}
+.hour-col.now .h-temp{color:rgba(255,255,255,0.95);font-weight:600}
+
+.aqi-row{
+  display:flex;align-items:center;gap:16px;
+}
+.aqi-badge{
+  padding:6px 16px;border-radius:10px;
+  background:rgba(52,211,153,0.1);
+  font-size:22px;font-weight:600;
+  color:#6ee7b7;
+}
+.aqi-text{
+  font-size:20px;color:rgba(255,255,255,0.25);
+}
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="left">
+    <div class="location">
+      <div class="pin">📍</div>
+      <span>北京 · 海淀</span>
+    </div>
+    <div class="temp-block">
+      <div class="temp-row">
+        <div class="temp-num">18</div>
+        <div class="temp-unit">°C</div>
+      </div>
+      <div class="temp-desc">多云</div>
+    </div>
+    <div class="temp-range">
+      <span class="hi">↑ 22°</span>
+      <div class="sep"></div>
+      <span class="lo">↓ 11°</span>
+      <div class="sep"></div>
+      <span class="lo">体感 16°</span>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="right-label">逐时预报</div>
+    <div class="hourly">
+      <div class="hour-col now">
+        <div class="h-time">现在</div>
+        <div class="h-icon">⛅</div>
+        <div class="h-temp">18°</div>
+      </div>
+      <div class="hour-col">
+        <div class="h-time">9时</div>
+        <div class="h-icon">🌤️</div>
+        <div class="h-temp">19°</div>
+      </div>
+      <div class="hour-col">
+        <div class="h-time">10时</div>
+        <div class="h-icon">🌤️</div>
+        <div class="h-temp">20°</div>
+      </div>
+      <div class="hour-col">
+        <div class="h-time">11时</div>
+        <div class="h-icon">☀️</div>
+        <div class="h-temp">21°</div>
+      </div>
+      <div class="hour-col">
+        <div class="h-time">12时</div>
+        <div class="h-icon">☀️</div>
+        <div class="h-temp">22°</div>
+      </div>
+    </div>
+    <div class="aqi-row">
+      <div class="aqi-badge">优 AQI 42</div>
+      <div class="aqi-text">湿度 58% · 东南风 2级</div>
+    </div>
+  </div>
+</div>
+<script>
+function fit(){
+  var c=document.getElementById('card');
+  var s=Math.min(window.innerWidth/948,window.innerHeight/440);
+  c.style.transform='scale('+s+')';
+}
+fit();window.addEventListener('resize',fit);
+</script>
+</body>
+</html>

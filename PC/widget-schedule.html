@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>日程卡片 948×440</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#111}
+
+.card{
+  width:948px;height:440px;
+  transform-origin:top left;
+  position:absolute;top:0;left:0;
+  border-radius:40px;
+  overflow:hidden;
+  font-family:'Noto Sans SC',-apple-system,'PingFang SC',sans-serif;
+  background:linear-gradient(145deg, #1a1230 0%, #110d22 40%, #0c0a18 100%);
+  padding:44px 52px;
+  display:flex;flex-direction:column;
+  position:relative;
+}
+
+.card::before{
+  content:'';position:absolute;
+  top:-40px;left:-40px;
+  width:280px;height:280px;border-radius:50%;
+  background:radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%);
+}
+
+/* 顶部 */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  position:relative;z-index:1;
+  margin-bottom:32px;
+}
+.header-left{display:flex;align-items:baseline;gap:16px}
+.header-left .today{
+  font-size:32px;font-weight:600;
+  color:rgba(255,255,255,0.9);
+}
+.header-left .date-badge{
+  font-size:22px;font-weight:400;
+  color:rgba(255,255,255,0.35);
+}
+.header-right .count{
+  padding:6px 16px;border-radius:10px;
+  background:rgba(99,102,241,0.12);
+  color:#a5b4fc;font-weight:600;
+  font-size:22px;
+}
+
+/* 日程列表 */
+.schedule{
+  flex:1;display:flex;flex-direction:column;
+  gap:14px;
+  position:relative;z-index:1;
+}
+
+.event{
+  display:flex;align-items:center;gap:20px;
+}
+
+.event-time{
+  width:110px;flex-shrink:0;
+  text-align:right;
+}
+.event-time .t-hour{font-size:26px;font-weight:600;color:rgba(255,255,255,0.55)}
+.event-time .t-range{font-size:18px;color:rgba(255,255,255,0.2)}
+
+.event-dot{
+  width:14px;height:14px;border-radius:50%;
+  flex-shrink:0;
+}
+
+.event-body{
+  flex:1;
+  border-radius:18px;
+  padding:18px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;
+}
+
+.event-info{display:flex;flex-direction:column;gap:4px}
+.event-info .e-title{font-size:26px;font-weight:500;color:rgba(255,255,255,0.88)}
+.event-info .e-meta{font-size:20px;color:rgba(255,255,255,0.3)}
+
+.event-tag{
+  padding:6px 16px;border-radius:10px;
+  font-size:20px;font-weight:600;
+  flex-shrink:0;
+}
+
+/* 颜色 */
+.event.now .event-dot{background:#6366f1;box-shadow:0 0 12px rgba(99,102,241,0.5)}
+.event.now .event-body{background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.15)}
+.event.now .event-tag{background:rgba(99,102,241,0.15);color:#a5b4fc}
+.event.now .event-time .t-hour{color:#a5b4fc}
+
+.event.upcoming .event-dot{background:rgba(250,204,21,0.6)}
+.event.upcoming .event-body{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)}
+.event.upcoming .event-tag{background:rgba(250,204,21,0.1);color:#fde68a}
+
+.event.later .event-dot{background:rgba(255,255,255,0.15)}
+.event.later .event-body{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
+.event.later .event-info .e-title{color:rgba(255,255,255,0.45)}
+.event.later .event-tag{background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.25)}
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="header">
+    <div class="header-left">
+      <div class="today">今日日程</div>
+      <div class="date-badge">3月25日 · 周二</div>
+    </div>
+    <div class="header-right">
+      <div class="count">3 个会议</div>
+    </div>
+  </div>
+
+  <div class="schedule">
+    <div class="event now">
+      <div class="event-time">
+        <div class="t-hour">8:00</div>
+        <div class="t-range">- 9:30</div>
+      </div>
+      <div class="event-dot"></div>
+      <div class="event-body">
+        <div class="event-info">
+          <div class="e-title">Q2 产品评审</div>
+          <div class="e-meta">会议室 A · 6人参会</div>
+        </div>
+        <div class="event-tag">进行中</div>
+      </div>
+    </div>
+
+    <div class="event upcoming">
+      <div class="event-time">
+        <div class="t-hour">10:00</div>
+        <div class="t-range">- 11:00</div>
+      </div>
+      <div class="event-dot"></div>
+      <div class="event-body">
+        <div class="event-info">
+          <div class="e-title">跨端 MiClaw 技术对齐</div>
+          <div class="e-meta">线上 · 手机+PC+车机</div>
+        </div>
+        <div class="event-tag">即将开始</div>
+      </div>
+    </div>
+
+    <div class="event later">
+      <div class="event-time">
+        <div class="t-hour">14:00</div>
+        <div class="t-range">- 15:30</div>
+      </div>
+      <div class="event-dot"></div>
+      <div class="event-body">
+        <div class="event-info">
+          <div class="e-title">门店展陈方案评审</div>
+          <div class="e-meta">会议室 B · 产品+设计</div>
+        </div>
+        <div class="event-tag">下午</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function fit(){
+  var c=document.getElementById('card');
+  var s=Math.min(window.innerWidth/948,window.innerHeight/440);
+  c.style.transform='scale('+s+')';
+}
+fit();window.addEventListener('resize',fit);
+</script>
+</body>
+</html>

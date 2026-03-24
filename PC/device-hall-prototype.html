@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiClaw - Device Hall 可视化原型</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes popoverIn { from { opacity: 0; transform: translateY(-6px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes progressPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+  @keyframes detailIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+  .animate-spin { animation: spin 1s linear infinite; }
+  .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+  .animate-slide-up { animation: slideUp 0.5s ease-out; }
+  .animate-popover-in { animation: popoverIn 0.25s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .animate-progress-pulse { animation: progressPulse 2s ease-in-out infinite; }
+  .animate-detail-in { animation: detailIn 0.25s ease-out forwards; }
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+  .glass { background: rgba(255,255,255,0.72); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); }
+  .glass-dark { background: rgba(20,20,30,0.88); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); }
+  #hall-canvas { cursor: grab; }
+  #hall-canvas:active { cursor: grabbing; }
+</style>
+</head>
+<body class="bg-[#f2f2f2] h-screen overflow-hidden">
+<div id="app" class="size-full flex overflow-hidden p-0 md:p-4 gap-0 md:gap-5">
+  <!-- Sidebar -->
+  <div class="bg-white h-full rounded-none md:rounded-[44px] w-[280px] shrink-0 flex-col p-5 hidden md:flex">
+    <div class="flex items-center gap-2 px-3 pt-2 pb-6">
+      <div class="size-3 rounded-full bg-[#FF5C60] border border-black/10"></div>
+      <div class="size-3 rounded-full bg-[#FAC800] border border-black/10"></div>
+      <div class="size-3 rounded-full bg-[#35C759] border border-black/10"></div>
+    </div>
+    <div class="flex flex-col gap-0.5">
+      <div class="flex items-center gap-3 px-4 py-3 rounded-2xl bg-black/[0.06] cursor-pointer"><span class="text-lg">💬</span><span class="text-base text-black/80">对话</span></div>
+      <div class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-black/[0.03] cursor-pointer transition-colors">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" opacity="0.8"/><circle cx="10" cy="10" r="3" fill="currentColor" opacity="0.8"/></svg>
+        <span class="text-base text-black/80">助手</span></div>
+      <div class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-black/[0.03] cursor-pointer transition-colors"><span class="text-lg">📄</span><span class="text-base text-black/80">资料</span></div>
+      <div class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-black/[0.03] cursor-pointer transition-colors"><span class="text-lg">⚙️</span><span class="text-base text-black/80">设置</span></div>
+    </div>
+  </div>
+  <!-- Main Chat Area -->
+  <div class="flex-1 flex flex-col min-w-0 bg-transparent relative">
+    <div class="flex items-center justify-between px-6 py-4 relative z-30">
+      <h1 class="text-[22px] font-semibold text-black">MiClaw</h1>
+      <button id="agent-status-btn" class="flex items-center gap-2 text-[13px] text-black/40 hover:text-black/60 transition-colors cursor-pointer rounded-lg px-2.5 py-1.5 hover:bg-black/[0.04]">
+        <span class="size-2 rounded-full bg-[#35C759]"></span>4 个设备 Bot 在线
+        <svg class="size-3 text-black/30 transition-transform duration-200" id="agent-chevron" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <!-- 3D Device Hall Popover (fixed position to avoid layout overflow) -->
+    <div id="agent-popover" class="fixed z-50 hidden" style="width:720px;height:400px;">
+      <div class="glass-dark rounded-2xl border border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.25),0_1px_3px_rgba(0,0,0,0.1)] animate-popover-in overflow-hidden w-full h-full">
+        <div class="relative w-full h-full">
+          <canvas id="hall-canvas" class="w-full h-full"></canvas>
+          <div class="absolute top-3 left-4 flex items-center gap-2 pointer-events-none">
+            <span class="text-[11px] font-semibold text-white/40 uppercase tracking-wider">MiClaw Device Bots</span>
+            <span class="text-[11px] text-white/25">4 / 4 在线</span>
+          </div>
+          <div class="absolute bottom-3 left-4 text-[10px] text-white/20 pointer-events-none">拖拽平移 · 点击角色查看详情 · 拖拽任务到角色可转移</div>
+          <!-- Agent Detail Panel -->
+          <div id="agent-detail" class="absolute top-0 right-0 w-[260px] h-full hidden">
+            <div class="glass rounded-l-2xl border-l border-white/20 h-full p-4 flex flex-col animate-detail-in">
+              <button id="detail-close" class="absolute top-3 right-3 size-6 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center text-black/40 hover:text-black/60 transition-colors cursor-pointer text-xs">✕</button>
+              <div class="flex items-center gap-3 mt-1">
+                <div id="detail-avatar" class="shrink-0 size-11 rounded-full flex items-center justify-center text-xl shadow-sm"></div>
+                <div>
+                  <div class="flex items-center gap-2"><span class="size-[6px] rounded-full bg-[#35C759] shrink-0"></span><span id="detail-name" class="text-[14px] font-medium text-black/80"></span></div>
+                  <span id="detail-badge" class="text-[10px] text-black/30 border border-black/10 rounded px-1.5 leading-[18px] inline-block mt-0.5"></span>
+                </div>
+              </div>
+              <div id="detail-status" class="mt-3 text-[12px] text-black/40 leading-tight"></div>
+              <div id="detail-progress" class="mt-2 hidden"><div class="w-full h-[3px] bg-black/[0.06] rounded-full overflow-hidden"><div id="detail-progress-bar" class="h-full rounded-full animate-progress-pulse"></div></div></div>
+              <div class="flex items-center gap-2 mt-4">
+                <button id="detail-chat-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] text-black/60 hover:bg-black/[0.05] transition-colors cursor-pointer">💬 对话</button>
+                <button id="detail-interrupt-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px]">⏸️ 打断任务</button>
+              </div>
+              <div class="mt-4 text-[10px] text-black/30 uppercase tracking-wider mb-1.5">定时任务</div>
+              <div id="detail-tasks" class="flex flex-col gap-1 flex-1 overflow-y-auto scrollbar-thin"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="chat-messages" class="flex-1 overflow-y-auto scrollbar-thin px-6 py-4 flex flex-col gap-6"></div>
+    <div class="px-6 pb-6 pt-2">
+      <div id="input-box" class="bg-white rounded-2xl px-5 py-3.5 flex items-center gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+        <div class="flex-1 flex items-center gap-1 min-h-[24px]">
+          <span id="mention-tag" class="hidden inline-flex items-center bg-[#d1e3ff] text-[#2563eb] rounded-full px-2.5 py-0.5 text-sm whitespace-nowrap cursor-pointer select-none" title="按 Backspace 或点击 × 删除"></span>
+          <input id="chat-input" type="text" placeholder="输入消息..." class="flex-1 outline-none text-[15px] text-black bg-transparent placeholder:text-black/25 min-w-0">
+        </div>
+        <button class="size-9 rounded-full bg-black flex items-center justify-center shrink-0 hover:bg-black/80 transition-colors cursor-pointer">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8.5L8 3.5L13 8.5M8 3.5V13" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+// ===== Agent Data =====
+var agents = {
+  pc:    { name:'MiClaw-PC',    emoji:'💻', badge:'重算力',      color:0x6366f1, colorTo:0x8b5cf6, busy:true,  status:'正在处理：生成多模态文案 (75%)', progress:75, gradient:'from-[#6366f1] to-[#8b5cf6]', tasks:['每日 22:00 · 自动备份工作区'], label:'PC Bot' },
+  phone: { name:'MiClaw-Phone', emoji:'📱', badge:'相册/传感器', color:0x06b6d4, colorTo:0x10b981, busy:false, status:'空闲中 · 设备位于口袋', progress:0, gradient:'from-[#06b6d4] to-[#10b981]', tasks:['每日 07:00 · 推送「一觉醒来世界发生了什么」','每日 08:30 · 播报今日天气与通勤路况'], label:'Phone Bot' },
+  car:   { name:'MiClaw-Car',   emoji:'🚗', badge:'导航/车控',   color:0xf59e0b, colorTo:0xef4444, busy:false, status:'空闲中 · 设备正在行驶 (时速 60km/h)', progress:0, gradient:'from-[#f59e0b] to-[#ef4444]', tasks:['每日 08:00 · 预热座舱并规划通勤路线'], label:'Car Bot' },
+  pad:   { name:'MiClaw-Pad',   emoji:'📋', badge:'手写笔/大屏', color:0xec4899, colorTo:0xa855f7, busy:false, status:'空闲中 · 设备位于公司', progress:0, gradient:'from-[#ec4899] to-[#a855f7]', tasks:['每日 09:00 · 同步今日会议日程到大屏'], label:'Pad Bot' }
+};
+var agentKeys = ['pc','phone','car','pad'];
+var agentNames = { pc:'MiClaw-PC', phone:'MiClaw-Phone', car:'MiClaw-Car', pad:'MiClaw-Pad' };
+var chatMessages = document.getElementById('chat-messages');
+var agentBtn = document.getElementById('agent-status-btn');
+var agentPopover = document.getElementById('agent-popover');
+var agentChevron = document.getElementById('agent-chevron');
+var mentionTag = document.getElementById('mention-tag');
+var chatInput = document.getElementById('chat-input');
+
+// ===== Popover toggle =====
+var popoverOpen = false;
+function positionPopover() {
+  var rect = agentBtn.getBoundingClientRect();
+  var pw = 720, ph = 400;
+  var left = rect.right - pw;
+  if (left < 8) left = 8;
+  if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+  agentPopover.style.left = left + 'px';
+  agentPopover.style.top = (rect.bottom + 6) + 'px';
+}
+agentBtn.addEventListener('click', function(e) {
+  e.stopPropagation(); popoverOpen = !popoverOpen;
+  agentPopover.classList.toggle('hidden', !popoverOpen);
+  agentChevron.style.transform = popoverOpen ? 'rotate(180deg)' : '';
+  if (popoverOpen) { positionPopover(); initHall(); }
+});
+document.addEventListener('click', function(e) {
+  if (popoverOpen && !agentPopover.contains(e.target) && !agentBtn.contains(e.target)) {
+    popoverOpen = false; agentPopover.classList.add('hidden'); agentChevron.style.transform = '';
+  }
+});
+window.addEventListener('resize', function() {
+  if (popoverOpen) positionPopover();
+  if (renderer) {
+    var canvas = document.getElementById('hall-canvas');
+    var cw = canvas.parentElement.clientWidth || 720, ch2 = canvas.parentElement.clientHeight || 400;
+    var aspect = cw / ch2, d = 4;
+    camera.left = -d*aspect; camera.right = d*aspect; camera.top = d; camera.bottom = -d;
+    camera.updateProjectionMatrix();
+    renderer.setSize(cw, ch2);
+  }
+});
+
+// ===== Mention tag =====
+function chatWithAgent(k) {
+  mentionTag.textContent = '@' + agentNames[k] + ' ×'; mentionTag.dataset.agent = k;
+  mentionTag.classList.remove('hidden'); mentionTag.classList.add('inline-flex');
+  chatInput.focus(); popoverOpen = false; agentPopover.classList.add('hidden'); agentChevron.style.transform = '';
+}
+function removeMention() { mentionTag.classList.add('hidden'); mentionTag.classList.remove('inline-flex'); mentionTag.textContent = ''; delete mentionTag.dataset.agent; }
+mentionTag.addEventListener('click', removeMention);
+chatInput.addEventListener('keydown', function(e) { if (e.key==='Backspace' && chatInput.value==='' && !mentionTag.classList.contains('hidden')) removeMention(); });
+// ===== Agent Detail Panel =====
+var detailPanel = document.getElementById('agent-detail');
+document.getElementById('detail-close').addEventListener('click', function() { detailPanel.classList.add('hidden'); });
+function showAgentDetail(k) {
+  currentDetailAgent = k;
+  var a = agents[k];
+  document.getElementById('detail-avatar').className = 'shrink-0 size-11 rounded-full bg-gradient-to-br ' + a.gradient + ' flex items-center justify-center text-xl shadow-sm';
+  document.getElementById('detail-avatar').textContent = a.emoji;
+  document.getElementById('detail-name').textContent = a.name;
+  document.getElementById('detail-badge').textContent = a.badge;
+  document.getElementById('detail-status').textContent = a.status;
+  var prog = document.getElementById('detail-progress');
+  if (a.busy) { prog.classList.remove('hidden'); var bar = document.getElementById('detail-progress-bar'); bar.style.width = a.progress+'%'; bar.className = 'h-full rounded-full animate-progress-pulse bg-gradient-to-r ' + a.gradient; }
+  else { prog.classList.add('hidden'); }
+  document.getElementById('detail-chat-btn').onclick = function() { chatWithAgent(k); detailPanel.classList.add('hidden'); };
+  var intBtn = document.getElementById('detail-interrupt-btn');
+  intBtn.className = a.busy ? 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] text-black/60 hover:bg-black/[0.05] transition-colors cursor-pointer' : 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] text-black/15 cursor-not-allowed';
+  intBtn.disabled = !a.busy;
+  renderTasks(k);
+  detailPanel.classList.remove('hidden');
+}
+function renderTasks(k) {
+  var a = agents[k];
+  document.getElementById('detail-tasks').innerHTML = a.tasks.map(function(t, idx) {
+    return '<div draggable="true" data-from-agent="'+k+'" data-task-idx="'+idx+'" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-black/[0.03] text-[12px] text-black/50 cursor-grab active:cursor-grabbing hover:bg-black/[0.06] transition-colors select-none" style="touch-action:none">📋 ' + t + '</div>';
+  }).join('');
+  // Attach drag events to each task item
+  var taskEls = document.getElementById('detail-tasks').querySelectorAll('[draggable]');
+  taskEls.forEach(function(el) {
+    el.addEventListener('dragstart', function(e) {
+      e.dataTransfer.setData('text/plain', el.dataset.fromAgent + ':' + el.dataset.taskIdx);
+      e.dataTransfer.effectAllowed = 'move';
+      el.style.opacity = '0.4';
+    });
+    el.addEventListener('dragend', function(e) {
+      el.style.opacity = '1';
+    });
+  });
+}
+// ===== Three.js Steampunk Isometric Hall =====
+var hallInited = false, scene, camera, renderer, raycaster, mouse;
+var agentMeshes = {}, clock = new THREE.Clock();
+var panState = { dragging:false, moved:false, prev:{x:0,y:0}, offset:{x:0,y:0} };
+// Wander state for each dwarf
+var wanderState = {};
+// Task transfer animation state
+var transferAnim = null; // { fromKey, toKey, phase, progress, fileMesh }
+var currentDetailAgent = null; // which agent's detail panel is open
+
+function initHall() {
+  if (hallInited) return; hallInited = true;
+  var canvas = document.getElementById('hall-canvas');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a14);
+  scene.fog = new THREE.FogExp2(0x0a0a14, 0.025);
+  var aspect = (canvas.parentElement.clientWidth||720)/(canvas.parentElement.clientHeight||400), d = 4;
+  camera = new THREE.OrthographicCamera(-d*aspect, d*aspect, d, -d, 0.1, 100);
+  camera.position.set(10, 10, 10); camera.lookAt(0, 0, 0);
+  renderer = new THREE.WebGLRenderer({ canvas:canvas, antialias:true });
+  var cw = canvas.parentElement.clientWidth || 720, ch2 = canvas.parentElement.clientHeight || 400;
+  renderer.setSize(cw, ch2); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  raycaster = new THREE.Raycaster(); mouse = new THREE.Vector2();
+  // Cyberpunk neon lighting
+  scene.add(new THREE.AmbientLight(0x1a1a2e, 0.5));
+  var dir = new THREE.DirectionalLight(0xffeedd, 0.5); dir.position.set(5, 12, 5); dir.castShadow = true; scene.add(dir);
+  var pinkL = new THREE.PointLight(0xFF69B4, 0.7, 30); pinkL.position.set(-8, 5, -5); scene.add(pinkL);
+  var greenL = new THREE.PointLight(0x39FF14, 0.6, 30); greenL.position.set(8, 5, 5); scene.add(greenL);
+  var warmL = new THREE.PointLight(0xffaa44, 0.4, 15); warmL.position.set(0, 4, 0); scene.add(warmL);
+  createFloor();
+  [{key:'pc',x:-3,z:-2},{key:'phone',x:3,z:-2},{key:'car',x:-3,z:2},{key:'pad',x:3,z:2}].forEach(function(p) {
+    createDwarf(p.key, p.x, p.z);
+  });
+  // Pan
+  canvas.addEventListener('mousedown', function(e) { if(e.button===0){panState.dragging=true;panState.moved=false;panState.prev={x:e.clientX,y:e.clientY};} });
+  canvas.addEventListener('mousemove', function(e) { if(!panState.dragging)return; var dx=(e.clientX-panState.prev.x)*0.04,dy=(e.clientY-panState.prev.y)*0.04; if(Math.abs(dx)>0.001||Math.abs(dy)>0.001)panState.moved=true; panState.offset.x-=dx;panState.offset.y-=dy;panState.prev={x:e.clientX,y:e.clientY}; });
+  canvas.addEventListener('mouseup', function(){panState.dragging=false;});
+  canvas.addEventListener('mouseleave', function(){panState.dragging=false;});
+  canvas.addEventListener('click', function(e) {
+    if(panState.moved)return; var rect=canvas.getBoundingClientRect();
+    mouse.x=((e.clientX-rect.left)/rect.width)*2-1; mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+    raycaster.setFromCamera(mouse, camera);
+    for(var i=0;i<agentKeys.length;i++){var k=agentKeys[i],g=agentMeshes[k]; if(g&&raycaster.intersectObjects(g.children,true).length>0){showAgentDetail(k);return;}}
+  });
+  animate();
+  initCanvasDragDrop();
+}
+function createFloor() {
+  var geo = new THREE.PlaneGeometry(30, 30);
+  var mat = new THREE.MeshStandardMaterial({color:0x0e0e1a, roughness:0.95, metalness:0.1});
+  var floor = new THREE.Mesh(geo, mat); floor.rotation.x=-Math.PI/2; floor.position.y=-0.01; floor.receiveShadow=true; scene.add(floor);
+  var g1 = new THREE.GridHelper(30, 30, 0x39FF14, 0x0e0e1a); g1.material.opacity=0.12; g1.material.transparent=true; scene.add(g1);
+  var g2 = new THREE.GridHelper(30, 60, 0xFF69B4, 0x0a0a14); g2.material.opacity=0.05; g2.material.transparent=true; g2.position.y=0.005; scene.add(g2);
+}
+
+// Shared materials
+var brassMat = new THREE.MeshStandardMaterial({color:0xb8860b, roughness:0.35, metalness:0.85});
+var wornBrassMat = new THREE.MeshStandardMaterial({color:0x8b6914, roughness:0.55, metalness:0.7});
+var leatherMat = new THREE.MeshStandardMaterial({color:0x5c3a1e, roughness:0.85, metalness:0.05});
+var darkLeatherMat = new THREE.MeshStandardMaterial({color:0x3a2210, roughness:0.9, metalness:0.05});
+var copperMat = new THREE.MeshStandardMaterial({color:0xb87333, roughness:0.5, metalness:0.6});
+
+function makeGear(r, c) {
+  var g = new THREE.Group();
+  var ring = new THREE.Mesh(new THREE.TorusGeometry(r, r*0.2, 6, 8), new THREE.MeshStandardMaterial({color:c||0xb8860b, roughness:0.4, metalness:0.8}));
+  g.add(ring);
+  for(var i=0;i<8;i++){var t=new THREE.Mesh(new THREE.BoxGeometry(r*0.25,r*0.25,r*0.12),ring.material);var a=(i/8)*Math.PI*2;t.position.set(Math.cos(a)*r,Math.sin(a)*r,0);t.rotation.z=a;g.add(t);}
+  return g;
+}
+function neonTorus(r, tr, c) {
+  return new THREE.Mesh(new THREE.TorusGeometry(r, tr||0.015, 6, 16), new THREE.MeshBasicMaterial({color:c, transparent:true, opacity:0.85}));
+}
+// ===== Steampunk Dwarf Character =====
+function createDwarf(key, x, z) {
+  var a = agents[key];
+  var group = new THREE.Group();
+  group.position.set(x, 0, z);
+
+  // === Neon wireframe base platform ===
+  var baseGeo = new THREE.CylinderGeometry(1.3, 1.5, 0.12, 8);
+  var baseMat = new THREE.MeshStandardMaterial({color:0x111122, roughness:0.3, metalness:0.5});
+  var base = new THREE.Mesh(baseGeo, baseMat); base.position.y=0.06; base.receiveShadow=true; group.add(base);
+  // Neon edge rings
+  var br1 = neonTorus(1.4, 0.018, 0xFF69B4); br1.rotation.x=-Math.PI/2; br1.position.y=0.13; group.add(br1);
+  var br2 = neonTorus(1.1, 0.014, 0x39FF14); br2.rotation.x=-Math.PI/2; br2.position.y=0.14; group.add(br2);
+  // Inner cross neon lines on base
+  [[1.1,0,0],[-1.1,0,0],[0,0,1.1],[0,0,-1.1]].forEach(function(p){
+    var dot = new THREE.Mesh(new THREE.SphereGeometry(0.04,6,6), new THREE.MeshBasicMaterial({color:0x39FF14,transparent:true,opacity:0.6}));
+    dot.position.set(p[0],0.14,p[2]); group.add(dot);
+  });
+
+  // === Character group (for floating animation) ===
+  var ch = new THREE.Group(); ch.position.set(0, 0, 0);
+
+  // -- Heavy brass & leather boots --
+  var bootMat = new THREE.MeshStandardMaterial({color:0x8b6914, roughness:0.6, metalness:0.5});
+  var bootSoleMat = new THREE.MeshStandardMaterial({color:0x3a2210, roughness:0.9, metalness:0.1});
+  [[-0.18, 0],[0.18, 0]].forEach(function(bx) {
+    // Boot sole
+    var sole = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.08, 0.32), bootSoleMat);
+    sole.position.set(bx[0], 0.19, 0.05); ch.add(sole);
+    // Boot body
+    var boot = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.28, 8), bootMat);
+    boot.position.set(bx[0], 0.37, 0.02); ch.add(boot);
+    // Boot brass trim
+    var trim = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.015, 6, 8), brassMat);
+    trim.rotation.x=-Math.PI/2; trim.position.set(bx[0], 0.5, 0.02); ch.add(trim);
+    // Boot neon accent
+    var accent = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.008, 6, 8), new THREE.MeshBasicMaterial({color:a.color,transparent:true,opacity:0.7}));
+    accent.rotation.x=-Math.PI/2; accent.position.set(bx[0], 0.32, 0.02); ch.add(accent);
+  });
+
+  // -- Canvas work pants with knee pads --
+  var pantsMat = new THREE.MeshStandardMaterial({color:0x2a4a6b, roughness:0.8, metalness:0.05});
+  // Left leg
+  var legL = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.1, 0.35, 8), pantsMat);
+  legL.position.set(-0.14, 0.68, 0); ch.add(legL);
+  // Right leg
+  var legR = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.1, 0.35, 8), pantsMat);
+  legR.position.set(0.14, 0.68, 0); ch.add(legR);
+  // Knee pads with neon lines
+  [[-0.14, 0],[0.14, 0]].forEach(function(kx) {
+    var kneePad = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.1, 0.08), darkLeatherMat);
+    kneePad.position.set(kx[0], 0.62, 0.1); ch.add(kneePad);
+    var kneeNeon = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.01), new THREE.MeshBasicMaterial({color:a.colorTo,transparent:true,opacity:0.8}));
+    kneeNeon.position.set(kx[0], 0.62, 0.14); ch.add(kneeNeon);
+  });
+  // Pant pockets
+  [[-0.22, 0.72],[0.22, 0.72]].forEach(function(px) {
+    var pocket = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.1, 0.12), new THREE.MeshStandardMaterial({color:0x1e3a55, roughness:0.85}));
+    pocket.position.set(px[0], px[1], 0); ch.add(pocket);
+  });
+  // -- Tunic / light armor torso --
+  var tunicColor = new THREE.Color(a.color).lerp(new THREE.Color(0x3a2210), 0.5);
+  var tunicMat = new THREE.MeshStandardMaterial({color:tunicColor, roughness:0.65, metalness:0.15});
+  var torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.2, 0.4, 8), tunicMat);
+  torso.position.y = 1.05; torso.castShadow=true; ch.add(torso);
+  // Leather shoulder pads
+  [[-0.26, 1.2],[0.26, 1.2]].forEach(function(sx) {
+    var pad = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), leatherMat);
+    pad.position.set(sx[0], sx[1], 0); pad.scale.set(1, 0.6, 1.2); ch.add(pad);
+  });
+  // Chest armor plate
+  var chestPlate = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.2, 0.06), new THREE.MeshStandardMaterial({color:0x5c3a1e, roughness:0.5, metalness:0.3}));
+  chestPlate.position.set(0, 1.08, 0.14); ch.add(chestPlate);
+  // MiClaw brass medallion on chest
+  var medallion = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.02, 12), brassMat);
+  medallion.rotation.x = Math.PI/2; medallion.position.set(0, 1.12, 0.18); ch.add(medallion);
+  var medallionGlow = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), new THREE.MeshBasicMaterial({color:a.color, transparent:true, opacity:0.9}));
+  medallionGlow.position.set(0, 1.12, 0.2); ch.add(medallionGlow);
+  // Neon circuit etch on tunic
+  var circuitLine = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.01, 0.01), new THREE.MeshBasicMaterial({color:0x00ccff, transparent:true, opacity:0.6}));
+  circuitLine.position.set(0, 0.98, 0.16); ch.add(circuitLine);
+  var circuitLine2 = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.12, 0.01), new THREE.MeshBasicMaterial({color:0x00ccff, transparent:true, opacity:0.5}));
+  circuitLine2.position.set(0.08, 1.02, 0.16); ch.add(circuitLine2);
+
+  // -- Utility belt --
+  var beltRing = new THREE.Mesh(new THREE.TorusGeometry(0.21, 0.025, 6, 16), wornBrassMat);
+  beltRing.rotation.x = -Math.PI/2; beltRing.position.y = 0.88; ch.add(beltRing);
+  // Belt buckle (worn brass)
+  var buckle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.03), wornBrassMat);
+  buckle.position.set(0, 0.88, 0.2); ch.add(buckle);
+  // Mini tools on belt
+  // Soldering iron
+  var iron = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.008, 0.12, 6), copperMat);
+  iron.position.set(-0.2, 0.85, 0.1); iron.rotation.z = 0.3; ch.add(iron);
+  // Copper wire coil
+  var coil = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.01, 6, 8), copperMat);
+  coil.position.set(0.2, 0.85, 0.12); ch.add(coil);
+  // Mini compass
+  var compass = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.015, 8), brassMat);
+  compass.rotation.x = Math.PI/2; compass.position.set(0.12, 0.85, 0.18); ch.add(compass);
+  var compassNeedle = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.005, 0.005), new THREE.MeshBasicMaterial({color:0xff3333}));
+  compassNeedle.position.set(0.12, 0.85, 0.2); ch.add(compassNeedle);
+  // -- Arms with leather gloves --
+  var armMat = new THREE.MeshStandardMaterial({color:tunicColor, roughness:0.7, metalness:0.1});
+  // Left arm (holding wrench)
+  var armL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.055, 0.3, 8), armMat);
+  armL.position.set(-0.3, 1.0, 0.05); armL.rotation.z = 0.15; ch.add(armL);
+  // Left glove
+  var gloveL = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), leatherMat);
+  gloveL.position.set(-0.33, 0.84, 0.08); ch.add(gloveL);
+  // Wrench in left hand
+  var wrenchHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.015, 0.28, 6), wornBrassMat);
+  wrenchHandle.position.set(-0.33, 0.72, 0.08); wrenchHandle.rotation.z = -0.1; ch.add(wrenchHandle);
+  var wrenchHead = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 0.02), brassMat);
+  wrenchHead.position.set(-0.34, 0.58, 0.08); ch.add(wrenchHead);
+  // Wrench neon etch
+  var wrenchNeon = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.008, 0.005), new THREE.MeshBasicMaterial({color:0x00ccff, transparent:true, opacity:0.8}));
+  wrenchNeon.position.set(-0.34, 0.58, 0.1); ch.add(wrenchNeon);
+  // Right arm
+  var armR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.055, 0.3, 8), armMat);
+  armR.position.set(0.3, 1.0, 0.05); armR.rotation.z = -0.15; ch.add(armR);
+  var gloveR = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), leatherMat);
+  gloveR.position.set(0.33, 0.84, 0.08); ch.add(gloveR);
+
+  // -- Head --
+  var headMat = new THREE.MeshStandardMaterial({color:0xdeb887, roughness:0.7, metalness:0.05});
+  var head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), headMat);
+  head.position.y = 1.42; head.castShadow=true; ch.add(head);
+  // Eyes — glowing with agent color
+  var eyeMat = new THREE.MeshBasicMaterial({color:a.colorTo});
+  var eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), eyeMat);
+  eyeL.position.set(-0.08, 1.45, 0.18); ch.add(eyeL);
+  var eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), eyeMat);
+  eyeR.position.set(0.08, 1.45, 0.18); ch.add(eyeR);
+  // Eye glow halos
+  [eyeL, eyeR].forEach(function(eye) {
+    var halo = new THREE.Mesh(new THREE.RingGeometry(0.04, 0.055, 8), new THREE.MeshBasicMaterial({color:a.colorTo, transparent:true, opacity:0.3, side:THREE.DoubleSide}));
+    halo.position.copy(eye.position); halo.position.z += 0.02; ch.add(halo);
+  });
+  // Nose
+  var nose = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), new THREE.MeshStandardMaterial({color:0xc9a06c, roughness:0.8}));
+  nose.position.set(0, 1.4, 0.2); ch.add(nose);
+  // -- Copper-red low-poly beard with brass clasps --
+  var beardMat = new THREE.MeshStandardMaterial({color:0xb87333, roughness:0.6, metalness:0.3});
+  // Main beard tuft (low-poly cone)
+  var beardMain = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.22, 5), beardMat);
+  beardMain.position.set(0, 1.22, 0.14); beardMain.rotation.x = 0.15; ch.add(beardMain);
+  // Side tufts
+  var beardL = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.14, 4), beardMat);
+  beardL.position.set(-0.1, 1.28, 0.12); beardL.rotation.z = 0.2; ch.add(beardL);
+  var beardR = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.14, 4), beardMat);
+  beardR.position.set(0.1, 1.28, 0.12); beardR.rotation.z = -0.2; ch.add(beardR);
+  // Brass beard clasps
+  [[-0.04, 1.18, 0.18],[0.04, 1.18, 0.18],[0, 1.12, 0.16]].forEach(function(p) {
+    var clasp = new THREE.Mesh(new THREE.SphereGeometry(0.018, 6, 6), brassMat);
+    clasp.position.set(p[0], p[1], p[2]); ch.add(clasp);
+  });
+
+  // -- Weathered leather hood --
+  // Hood main shell (half-sphere, slightly flattened)
+  var hoodMat = new THREE.MeshStandardMaterial({color:0x4a2e14, roughness:0.85, metalness:0.08});
+  var hood = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 8, 0, Math.PI*2, 0, Math.PI*0.6), hoodMat);
+  hood.position.y = 1.5; hood.castShadow=true; ch.add(hood);
+  // Hood brim
+  var brimGeo = new THREE.TorusGeometry(0.26, 0.025, 6, 12);
+  var brim = new THREE.Mesh(brimGeo, darkLeatherMat);
+  brim.rotation.x = -Math.PI/2; brim.position.y = 1.38; ch.add(brim);
+  // Hood brass gear decorations along edge
+  for(var gi=0; gi<5; gi++) {
+    var gAngle = (gi/5)*Math.PI - Math.PI*0.5;
+    var miniGear = makeGear(0.03, 0xb8860b);
+    miniGear.position.set(Math.cos(gAngle)*0.26, 1.38, Math.sin(gAngle)*0.26);
+    miniGear.rotation.x = -Math.PI/2;
+    miniGear.userData.gearSpin = true;
+    ch.add(miniGear);
+  }
+  // Micro LED status lights on hood edge
+  for(var li=0; li<4; li++) {
+    var lAngle = (li/4)*Math.PI*0.8 - Math.PI*0.4;
+    var ledColor = li%2===0 ? 0x39FF14 : 0xFF69B4;
+    var led = new THREE.Mesh(new THREE.SphereGeometry(0.015, 6, 6), new THREE.MeshBasicMaterial({color:ledColor}));
+    led.position.set(Math.cos(lAngle)*0.27, 1.4, Math.sin(lAngle)*0.27);
+    led.userData.ledBlink = true;
+    ch.add(led);
+  }
+  // Neon circuit etch on hood surface
+  var hoodCircuit1 = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.006, 4, 6), new THREE.MeshBasicMaterial({color:0x00ccff, transparent:true, opacity:0.5}));
+  hoodCircuit1.rotation.x = -0.3; hoodCircuit1.position.y = 1.52; ch.add(hoodCircuit1);
+  var hoodCircuit2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.005, 0.005), new THREE.MeshBasicMaterial({color:0xFF69B4, transparent:true, opacity:0.4}));
+  hoodCircuit2.position.set(0, 1.58, -0.1); ch.add(hoodCircuit2);
+  // -- Status ring under character --
+  var statusColor = a.busy ? 0xfbbf24 : 0x35c759;
+  var statusRing = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.6, 24), new THREE.MeshBasicMaterial({color:statusColor, transparent:true, opacity:0.5, side:THREE.DoubleSide}));
+  statusRing.rotation.x = -Math.PI/2; statusRing.position.y = 0.16; ch.add(statusRing);
+
+  group.add(ch);
+
+  // -- Floating label sprite --
+  var lc = document.createElement('canvas'); lc.width=256; lc.height=64;
+  var ctx = lc.getContext('2d');
+  ctx.clearRect(0,0,256,64);
+  ctx.font = 'bold 22px Inter, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffffff'; ctx.fillText(a.emoji + ' ' + a.name, 128, 24);
+  ctx.font = '14px Inter, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillText(a.label, 128, 48);
+  var labelTex = new THREE.CanvasTexture(lc);
+  var label = new THREE.Sprite(new THREE.SpriteMaterial({map:labelTex, transparent:true}));
+  label.scale.set(3, 0.75, 1); label.position.set(0, 2.2, 0); group.add(label);
+
+  scene.add(group);
+  agentMeshes[key] = group;
+  // Init wander state
+  wanderState[key] = {
+    homeX: x, homeZ: z,
+    targetX: x, targetZ: z,
+    waitUntil: Math.random() * 2,
+    speed: 0.4 + Math.random() * 0.3
+  };
+  pickWanderTarget(key);
+}
+function pickWanderTarget(key) {
+  var ws = wanderState[key];
+  var range = 1.8;
+  ws.targetX = ws.homeX + (Math.random() - 0.5) * range * 2;
+  ws.targetZ = ws.homeZ + (Math.random() - 0.5) * range * 2;
+}
+// ===== Task Transfer via Drag & Drop =====
+var dragHighlightRing = null;
+var dragTargetKey = null;
+
+function hitTestAgent(clientX, clientY) {
+  var canvas = document.getElementById('hall-canvas');
+  if (!canvas || !raycaster || !camera) return null;
+  var rect = canvas.getBoundingClientRect();
+  var mx = ((clientX - rect.left) / rect.width) * 2 - 1;
+  var my = -((clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(new THREE.Vector2(mx, my), camera);
+  for (var i = 0; i < agentKeys.length; i++) {
+    var k = agentKeys[i], g = agentMeshes[k];
+    if (g && raycaster.intersectObjects(g.children, true).length > 0) return k;
+  }
+  return null;
+}
+
+function initCanvasDragDrop() {
+  var canvas = document.getElementById('hall-canvas');
+  // Create highlight ring (hidden by default)
+  dragHighlightRing = new THREE.Mesh(
+    new THREE.RingGeometry(1.0, 1.2, 24),
+    new THREE.MeshBasicMaterial({color: 0x39FF14, transparent: true, opacity: 0, side: THREE.DoubleSide})
+  );
+  dragHighlightRing.rotation.x = -Math.PI / 2;
+  dragHighlightRing.position.y = 0.2;
+  scene.add(dragHighlightRing);
+
+  canvas.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    var hit = hitTestAgent(e.clientX, e.clientY);
+    if (hit && hit !== currentDetailAgent) {
+      dragTargetKey = hit;
+      var g = agentMeshes[hit];
+      dragHighlightRing.position.x = g.position.x;
+      dragHighlightRing.position.z = g.position.z;
+      dragHighlightRing.material.opacity = 0.6;
+    } else {
+      dragTargetKey = null;
+      dragHighlightRing.material.opacity = 0;
+    }
+  });
+
+  canvas.addEventListener('dragleave', function() {
+    dragTargetKey = null;
+    dragHighlightRing.material.opacity = 0;
+  });
+
+  canvas.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dragHighlightRing.material.opacity = 0;
+    if (!dragTargetKey) return;
+    var data = e.dataTransfer.getData('text/plain').split(':');
+    var fromKey = data[0], taskIdx = parseInt(data[1]);
+    var toKey = dragTargetKey;
+    dragTargetKey = null;
+    if (fromKey === toKey || !agents[fromKey] || !agents[toKey]) return;
+    if (taskIdx < 0 || taskIdx >= agents[fromKey].tasks.length) return;
+    // Start the delivery animation
+    startTransferAnim(fromKey, toKey, taskIdx);
+  });
+}
+
+function createFileMesh(color) {
+  var g = new THREE.Group();
+  // File body
+  var body = new THREE.Mesh(
+    new THREE.BoxGeometry(0.2, 0.28, 0.03),
+    new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.4, metalness: 0.1})
+  );
+  g.add(body);
+  // Folded corner
+  var corner = new THREE.Mesh(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0.1, 0.14, 0.016),
+      new THREE.Vector3(0.1, 0.08, 0.016),
+      new THREE.Vector3(0.04, 0.14, 0.016)
+    ]).setIndex([0,1,2]),
+    new THREE.MeshBasicMaterial({color: 0xdddddd, side: THREE.DoubleSide})
+  );
+  g.add(corner);
+  // Neon glow outline
+  var glow = new THREE.Mesh(
+    new THREE.BoxGeometry(0.24, 0.32, 0.01),
+    new THREE.MeshBasicMaterial({color: color, transparent: true, opacity: 0.4})
+  );
+  glow.position.z = -0.02;
+  g.add(glow);
+  // Text lines on file
+  for (var i = 0; i < 3; i++) {
+    var line = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 0.012, 0.005),
+      new THREE.MeshBasicMaterial({color: 0xaaaaaa})
+    );
+    line.position.set(-0.02, 0.06 - i * 0.04, 0.018);
+    g.add(line);
+  }
+  return g;
+}
+
+function startTransferAnim(fromKey, toKey, taskIdx) {
+  if (transferAnim) return; // one at a time
+  var fromAgent = agents[fromKey];
+  var fileMesh = createFileMesh(fromAgent.color);
+  fileMesh.position.set(agentMeshes[fromKey].position.x, 1.5, agentMeshes[fromKey].position.z);
+  scene.add(fileMesh);
+  // Pause wandering for both
+  wanderState[fromKey].waitUntil = Infinity;
+  wanderState[toKey].waitUntil = Infinity;
+  // Save original positions to restore later
+  var fromOrigX = agentMeshes[fromKey].position.x;
+  var fromOrigZ = agentMeshes[fromKey].position.z;
+  transferAnim = {
+    fromKey: fromKey, toKey: toKey, taskIdx: taskIdx,
+    phase: 'walk-to', // walk-to → handover → walk-back
+    progress: 0,
+    fileMesh: fileMesh,
+    fromOrigX: fromOrigX, fromOrigZ: fromOrigZ,
+    startX: fromOrigX, startZ: fromOrigZ,
+    endX: agentMeshes[toKey].position.x, endZ: agentMeshes[toKey].position.z
+  };
+}
+
+function updateTransferAnim(dt, t) {
+  if (!transferAnim) return;
+  var ta = transferAnim;
+  var fromG = agentMeshes[ta.fromKey];
+  var toG = agentMeshes[ta.toKey];
+  var speed = 1.8;
+
+  if (ta.phase === 'walk-to') {
+    ta.progress += dt * speed;
+    if (ta.progress >= 1) ta.progress = 1;
+    // Ease in-out
+    var ease = ta.progress < 0.5 ? 2*ta.progress*ta.progress : 1-Math.pow(-2*ta.progress+2,2)/2;
+    // Move from-dwarf toward to-dwarf (stop 1.2 units away)
+    var dx = ta.endX - ta.startX, dz = ta.endZ - ta.startZ;
+    var dist = Math.sqrt(dx*dx + dz*dz);
+    var stopDist = Math.max(0, dist - 1.2);
+    var ratio = stopDist / dist;
+    var curX = ta.startX + dx * ratio * ease;
+    var curZ = ta.startZ + dz * ratio * ease;
+    fromG.position.x = curX;
+    fromG.position.z = curZ;
+    // Face target
+    var ch = fromG.children.find(function(c){return c.type==='Group';});
+    if (ch) {
+      var angle = Math.atan2(dx, dz);
+      ch.rotation.y += (angle - ch.rotation.y) * 0.15;
+    }
+    // File floats above from-dwarf
+    ta.fileMesh.position.set(curX, 1.8 + Math.sin(t*3)*0.05, curZ);
+    ta.fileMesh.rotation.y = t * 2;
+    if (ta.progress >= 1) {
+      ta.phase = 'handover';
+      ta.progress = 0;
+    }
+  } else if (ta.phase === 'handover') {
+    ta.progress += dt * 2.5;
+    if (ta.progress >= 1) ta.progress = 1;
+    // File flies from source to target
+    var fx = fromG.position.x + (toG.position.x - fromG.position.x) * ta.progress;
+    var fz = fromG.position.z + (toG.position.z - fromG.position.z) * ta.progress;
+    var arc = Math.sin(ta.progress * Math.PI) * 1.0;
+    ta.fileMesh.position.set(fx, 1.5 + arc, fz);
+    ta.fileMesh.rotation.y = t * 3;
+    ta.fileMesh.scale.setScalar(1 + Math.sin(ta.progress * Math.PI) * 0.3);
+    // Make target face source
+    var ch2 = toG.children.find(function(c){return c.type==='Group';});
+    if (ch2) {
+      var a2 = Math.atan2(fromG.position.x - toG.position.x, fromG.position.z - toG.position.z);
+      ch2.rotation.y += (a2 - ch2.rotation.y) * 0.15;
+    }
+    if (ta.progress >= 1) {
+      // Transfer the task data
+      var task = agents[ta.fromKey].tasks.splice(ta.taskIdx, 1)[0];
+      agents[ta.toKey].tasks.push(task);
+      // Refresh detail panel if still showing source agent
+      if (currentDetailAgent === ta.fromKey) renderTasks(ta.fromKey);
+      else if (currentDetailAgent === ta.toKey) renderTasks(ta.toKey);
+      // Flash effect on target
+      scene.add(createFlashRing(toG.position.x, toG.position.z, agents[ta.toKey].color));
+      ta.phase = 'walk-back';
+      ta.progress = 0;
+    }
+  } else if (ta.phase === 'walk-back') {
+    ta.progress += dt * speed;
+    if (ta.progress >= 1) ta.progress = 1;
+    var ease2 = ta.progress < 0.5 ? 2*ta.progress*ta.progress : 1-Math.pow(-2*ta.progress+2,2)/2;
+    // Walk back from current position to original home
+    if (!ta.backStartX) { ta.backStartX = fromG.position.x; ta.backStartZ = fromG.position.z; }
+    fromG.position.x = ta.backStartX + (ta.fromOrigX - ta.backStartX) * ease2;
+    fromG.position.z = ta.backStartZ + (ta.fromOrigZ - ta.backStartZ) * ease2;
+    // Face home direction
+    var ch3 = fromG.children.find(function(c){return c.type==='Group';});
+    if (ch3) {
+      var homeAngle = Math.atan2(ta.fromOrigX - fromG.position.x, ta.fromOrigZ - fromG.position.z);
+      ch3.rotation.y += (homeAngle - ch3.rotation.y) * 0.15;
+    }
+    // Shrink and fade file
+    var s = 1 - ta.progress;
+    ta.fileMesh.scale.setScalar(Math.max(0.01, s));
+    ta.fileMesh.position.y = 1.5 + ta.progress * 0.5;
+    if (ta.progress >= 1) {
+      scene.remove(ta.fileMesh);
+      // Resume wandering
+      wanderState[ta.fromKey].waitUntil = t + 0.5;
+      wanderState[ta.fromKey].homeX = ta.fromOrigX;
+      wanderState[ta.fromKey].homeZ = ta.fromOrigZ;
+      wanderState[ta.toKey].waitUntil = t + 0.5;
+      transferAnim = null;
+    }
+  }
+}
+
+function createFlashRing(x, z, color) {
+  var ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.3, 0.5, 24),
+    new THREE.MeshBasicMaterial({color: color, transparent: true, opacity: 0.8, side: THREE.DoubleSide})
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(x, 0.2, z);
+  ring.userData.flashRing = { birth: clock.elapsedTime, duration: 0.6 };
+  return ring;
+}
+function animate() {
+  requestAnimationFrame(animate);
+  var dt = clock.getDelta();
+  var t = clock.elapsedTime;
+  // Camera pan
+  camera.position.set(10+panState.offset.x, 10, 10-panState.offset.y);
+  camera.lookAt(panState.offset.x, 0, -panState.offset.y);
+  // Wander + floating animation for dwarf characters
+  agentKeys.forEach(function(key, i) {
+    var g = agentMeshes[key]; if(!g) return;
+    var ws = wanderState[key]; if(!ws) return;
+    // Wait phase — just float
+    if (t < ws.waitUntil) {
+      var ch = g.children.find(function(c){return c.type==='Group';});
+      if(ch) ch.position.y = Math.sin(t*1.2 + i*1.5) * 0.06;
+      return;
+    }
+    // Move toward target
+    var dx = ws.targetX - g.position.x;
+    var dz = ws.targetZ - g.position.z;
+    var dist = Math.sqrt(dx*dx + dz*dz);
+    if (dist < 0.08) {
+      ws.waitUntil = t + 1.5 + Math.random() * 3;
+      pickWanderTarget(key);
+    } else {
+      var step = Math.min(ws.speed * dt, dist);
+      g.position.x += (dx / dist) * step;
+      g.position.z += (dz / dist) * step;
+      // Face walking direction
+      var ch = g.children.find(function(c){return c.type==='Group';});
+      if(ch) {
+        var targetAngle = Math.atan2(dx, dz);
+        var diff = targetAngle - ch.rotation.y;
+        while(diff > Math.PI) diff -= Math.PI*2;
+        while(diff < -Math.PI) diff += Math.PI*2;
+        ch.rotation.y += diff * 0.08;
+      }
+    }
+    // Floating bob
+    var ch2 = g.children.find(function(c){return c.type==='Group';});
+    if(ch2) ch2.position.y = Math.sin(t*1.2 + i*1.5) * 0.06;
+  });
+  // Spin gears & blink LEDs
+  scene.traverse(function(obj) {
+    if(obj.userData.gearSpin) obj.rotation.z = t * 1.5;
+    if(obj.userData.ledBlink) obj.material.opacity = 0.5 + Math.sin(t*4 + obj.id)*0.5;
+  });
+  // Task transfer animation
+  updateTransferAnim(dt, t);
+  // Flash rings fade & expand
+  var toRemove = [];
+  scene.traverse(function(obj) {
+    if (obj.userData.flashRing) {
+      var fr = obj.userData.flashRing;
+      var age = t - fr.birth;
+      if (age > fr.duration) { toRemove.push(obj); return; }
+      var p = age / fr.duration;
+      obj.scale.setScalar(1 + p * 2);
+      obj.material.opacity = 0.8 * (1 - p);
+    }
+  });
+  toRemove.forEach(function(o) { scene.remove(o); });
+  renderer.render(scene, camera);
+}
+// ===== Chat flow =====
+function mention(name) { return '<span class="inline-flex items-center bg-[#d1e3ff] text-[#2563eb] rounded-full px-2.5 py-0.5 mx-0.5 text-sm whitespace-nowrap">@'+name+'</span>'; }
+function avatar(type) {
+  if(type==='pc') return '<div class="shrink-0 size-10 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center text-lg shadow-sm">💻</div>';
+  return '<div class="shrink-0 size-10 rounded-full bg-gradient-to-br from-[#06b6d4] to-[#10b981] flex items-center justify-center text-lg shadow-sm">📱</div>';
+}
+function botName(type) {
+  if(type==='pc') return '<span class="text-sm text-black/50">💻 MiClaw-PC</span>';
+  return '<span class="text-sm text-black/50">📱 MiClaw-Phone</span>';
+}
+function loadingIndicator(text) {
+  return '<div class="flex items-center gap-2 text-[13px] text-black/40 mb-1"><svg class="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.2"/><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg><span>'+text+'</span></div>';
+}
+function thinkingDone(text) { return '<div class="flex items-center gap-1.5 text-[13px] text-black/40 mb-1"><span>✦</span><span>'+text+'</span></div>'; }
+function userBubble(text) { return '<div class="flex justify-end w-full animate-fade-in"><div class="bg-[#d1e3ff] rounded-[20px] px-5 py-4 max-w-[70%]"><p class="text-base text-black">'+text+'</p></div></div>'; }
+function botBubble(type, content, sp) {
+  var s = sp ? '<div class="flex items-center gap-1.5 text-[13px] text-[#10b981]"><span>'+sp+'</span></div>' : '';
+  return '<div class="flex items-start gap-3 w-full animate-slide-up">'+avatar(type)+'<div class="flex flex-col gap-1.5 max-w-[80%]">'+botName(type)+s+'<div class="rounded-[20px] text-base text-black">'+content+'</div></div></div>';
+}
+var photoUrls = [
+  'https://images.unsplash.com/photo-1668900030471-170e936b201a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400',
+  'https://images.unsplash.com/photo-1683041133830-e781d3283991?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400',
+  'https://images.unsplash.com/photo-1625749670846-8d5629e85a01?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400',
+  'https://images.unsplash.com/photo-1693358521821-d115c4224a38?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400'
+];
+function photoGrid() {
+  return '<div class="grid grid-cols-2 gap-2 mt-3 w-[360px]">'+photoUrls.map(function(u){return '<div class="rounded-xl overflow-hidden aspect-square bg-gray-100"><img src="'+u+'" alt="风景照片" class="w-full h-full object-cover" onerror="this.outerHTML=\'<div class=\\\'flex items-center justify-center w-full h-full text-2xl text-black/20\\\'>🖼️</div>\'"></div>';}).join('')+'</div>';
+}
+function xiaohongshuCard() {
+  var tags = ['#旅行日记','#风景摄影','#治愈系','#说走就走的旅行','#周末去哪儿','#自然风光'];
+  var th = tags.map(function(t){return '<span class="text-[13px] text-[#2563eb] opacity-80">'+t+'</span>';}).join(' ');
+  return '<div class="mt-3 w-full max-w-[520px]"><div class="bg-black/[0.03] rounded-2xl p-5 border border-black/[0.06]">'
+    +'<h3 class="text-lg text-black mb-3">🏔️ 一场说走就走的旅行｜治愈系风景合集</h3>'
+    +'<p class="text-[15px] text-black/70 leading-relaxed mb-3 whitespace-pre-line">'
+    +'昨天趁着好天气出去走走 📸\n山川湖海、森林小径，每一帧都是大自然的馈赠～\n\n'
+    +'🌿 穿过森林的光影，听风吹过树梢\n🌊 站在海边看日落，心情瞬间被治愈\n🏞️ 湖面倒映着远山，美得像一幅画\n\n'
+    +'有时候不需要目的地，走出去就是最好的旅行 ✨</p>'
+    +'<div class="flex flex-wrap gap-1.5">'+th+'</div></div>'
+    +'<div class="flex items-center gap-3 mt-4 justify-end">'
+    +'<button class="px-5 py-2 rounded-full border border-black/15 text-sm text-black/70 bg-white hover:bg-black/[0.03] transition-colors cursor-pointer">修改文案</button>'
+    +'<button class="px-5 py-2 rounded-full bg-[#3482ff] text-sm text-white hover:bg-[#2b6ee6] transition-colors cursor-pointer shadow-sm">确认无误，让手机端发布</button>'
+    +'</div></div>';
+}
+var steps = [
+  {delay:600, render:function(){return userBubble('帮我找一下我昨天拍的照片，写一篇小红书游记');}},
+  {delay:1400, render:function(){return botBubble('pc', loadingIndicator('分析任务中...'));}},
+  {delay:2800, render:function(){return botBubble('pc', thinkingDone('任务分析完成')+'<div class="leading-relaxed"><p>收到，这是一个跨端协作任务。正在调度手机端获取影像素材...</p><p class="mt-2">'+mention('MiClaw-Phone')+' 请检索昨天本地相册中的风景照片并回传。</p></div>');}},
+  {delay:4200, render:function(){return botBubble('phone', loadingIndicator('正在检索手机相册...'));}},
+  {delay:6000, render:function(){return botBubble('phone', '<div class="leading-relaxed"><p>'+mention('MiClaw-PC')+' 已在手机相册找到 4 张昨天拍摄的风景照，已同步至当前工作台：</p>'+photoGrid()+'</div>', '✨ 检索完成');}},
+  {delay:7500, render:function(){return botBubble('pc', loadingIndicator('正在分析图片并生成游记...'));}},
+  {delay:9500, render:function(){return botBubble('pc', thinkingDone('内容生成完成')+'<div class="leading-relaxed"><p>素材已就位。结合图片，我为你生成了小红书游记草稿：</p>'+xiaohongshuCard()+'</div>');}}
+];
+function runSteps() {
+  var rendered = [];
+  steps.forEach(function(step, i) {
+    setTimeout(function() {
+      if(i===2&&rendered[1]){rendered[1].remove();rendered[1]=null;}
+      if(i===4&&rendered[3]){rendered[3].remove();rendered[3]=null;}
+      if(i===6&&rendered[5]){rendered[5].remove();rendered[5]=null;}
+      var div = document.createElement('div'); div.innerHTML = step.render();
+      chatMessages.appendChild(div); rendered[i] = div;
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, step.delay);
+  });
+}
+runSteps();
+</script>
+</body>
+</html>

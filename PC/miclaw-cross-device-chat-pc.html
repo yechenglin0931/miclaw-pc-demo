@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>MiClaw PC端 1090×1202</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#ccc}
+.vp{
+  width:1090px;height:1202px;
+  transform-origin:top left;
+  background:#F8F9FB;
+  font-family:-apple-system,'SF Pro Display','PingFang SC',sans-serif;
+  display:flex;overflow:hidden;
+  position:absolute;top:0;left:0;
+}
+
+/* 侧边栏 - Sidebar.tsx: bg-white, rounded-[22px], w-60(240px) */
+.sidebar{width:240px;background:#FFF;border-radius:22px;margin:8px;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.sb-header{padding:14px 14px 0;display:flex;align-items:center;height:44px}
+.sb-header .traffic{display:flex;gap:8px;align-items:center}
+.sb-header .traffic span{width:12px;height:12px;border-radius:50%}
+.sb-nav{padding:10px 10px 0;display:flex;flex-direction:column;gap:2px}
+.nav-btn{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:12px;font-size:14px;font-weight:500;color:rgba(0,0,0,0.8)}
+.nav-btn.active{background:rgba(52,130,255,0.08);color:#3482FF}
+.nav-btn i{width:16px;text-align:center;font-style:normal;font-size:14px}
+.sb-history{flex:1;overflow-y:auto;padding:16px 10px}
+.sb-label{padding:8px 10px;font-size:12px;font-weight:500;color:#8C9DB0}
+.sb-item{padding:8px 10px;border-radius:12px;font-size:13px;color:rgba(0,0,0,0.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.sb-item.active{background:rgba(52,130,255,0.08);color:#3482FF}
+.sb-settings{padding:8px 10px;border-top:1px solid rgba(0,0,0,0.06);margin-top:auto}
+.sb-settings .nav-btn{color:rgba(0,0,0,0.5)}
+
+/* 主内容区 */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.titlebar{height:44px;display:flex;align-items:center;padding:0 16px;flex-shrink:0}
+
+/* 消息区 - AgentSessionDetail.tsx */
+.messages{flex:1;overflow-y:auto;padding:20px 0}
+
+/* 用户消息 - bg-[rgba(52,130,255,0.10)], rounded-2xl(16px), px-4(16px) py-3.5(14px), max-w-[480px] */
+.user-msg{padding:8px 16px}
+.user-msg-inner{max-width:768px;margin:0 auto;padding-left:48px;display:flex;justify-content:flex-end}
+.user-bubble{max-width:480px;background:rgba(52,130,255,0.10);border-radius:16px;padding:14px 16px;color:#1A1D23;font-size:14px;line-height:1.6;word-break:break-word}
+
+/* AI消息 */
+.ai-msg{padding:8px 16px}
+.ai-msg-inner{max-width:768px;margin:0 auto}
+.ai-content{color:#1A1D23;font-size:14px;line-height:1.7;word-break:break-word}
+.ai-content b{font-weight:600}
+.hl{color:#3482FF}
+.hint{color:#8E8EA0;font-size:12px;padding:4px 0 12px}
+.sep{color:#8E8EA0;font-size:12px;padding:12px 0 4px;border-top:1px solid rgba(0,0,0,0.06);margin-top:8px}
+
+/* 输入栏 - AgentPromptInput.tsx: rounded-2xl, border, bg-miclaw-surface */
+.input-area{padding:16px;padding-top:0;flex-shrink:0}
+.input-box{max-width:768px;margin:0 auto;border-radius:16px;border:1px solid #E5E5E5;background:#FFF;box-shadow:0 1px 3px rgba(0,0,0,0.04);padding:12px 16px;display:flex;align-items:center;gap:8px}
+.input-placeholder{flex:1;font-size:14px;color:#8E8EA0}
+.input-send{width:32px;height:32px;border-radius:8px;background:#E5E5E5;display:flex;align-items:center;justify-content:center;font-size:14px;color:#8E8EA0}
+.input-folder{display:flex;align-items:center;gap:4px;font-size:12px;color:#8C9DB0;padding:4px 8px;border-radius:6px;background:rgba(0,0,0,0.03)}
+</style>
+</head>
+<body>
+<div class="vp" id="vp">
+  <div class="sidebar">
+    <div class="sb-header">
+      <div class="traffic"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
+    </div>
+    <div class="sb-nav">
+      <div class="nav-btn active"><i>＋</i><span>新对话</span></div>
+      <div class="nav-btn"><i>🕐</i><span>定时任务</span></div>
+      <div class="nav-btn"><i>📁</i><span>我的文件</span></div>
+    </div>
+    <div class="sb-history">
+      <div class="sb-label">历史记录</div>
+      <div class="sb-item active">出差行程安排</div>
+      <div class="sb-item">周报整理</div>
+      <div class="sb-item">项目方案讨论</div>
+      <div class="sb-item">会议纪要生成</div>
+      <div class="sb-item">代码审查建议</div>
+    </div>
+    <div class="sb-settings"><div class="nav-btn"><i>⚙</i><span>设置</span></div></div>
+  </div>
+  <div class="main">
+    <div class="titlebar"></div>
+    <div class="messages">
+      <div class="ai-msg"><div class="ai-msg-inner"><div class="hint">📱 以下对话从手机端同步</div></div></div>
+      <div class="user-msg"><div class="user-msg-inner"><div class="user-bubble">帮我查一下明天北京到上海的高铁票，下午2点左右出发的</div></div></div>
+      <div class="ai-msg"><div class="ai-msg-inner"><div class="ai-content">好的，我帮你查到了以下车次：<br><br>🚄 <b>G1次</b> 北京南→上海虹桥<br>· 出发 <span class="hl">14:00</span> → 到达 18:32 · 历时 4小时32分 · 二等座 ¥553<br><br>🚄 <b>G7次</b> 北京南→上海虹桥<br>· 出发 <span class="hl">14:28</span> → 到达 19:01 · 历时 4小时33分 · 二等座 ¥553<br><br>需要我帮你预订哪一趟？</div></div></div>
+      <div class="user-msg"><div class="user-msg-inner"><div class="user-bubble">订G1次吧，二等座，用我的身份信息</div></div></div>
+      <div class="ai-msg"><div class="ai-msg-inner"><div class="ai-content">✅ 已为你预订成功！<br><br><b>G1次</b> 明天 14:00 北京南→上海虹桥<br>二等座 · ¥553 · 已从默认支付方式扣款<br><br>电子客票已发送到你的12306账户。到站后还需要安排什么吗？</div></div></div>
+      <div class="ai-msg"><div class="ai-msg-inner"><div class="sep">💻 以下对话在电脑端继续</div></div></div>
+      <div class="user-msg"><div class="user-msg-inner"><div class="user-bubble">到了上海之后帮我整理一份出差日程文档，包含明天的行程和后天的会议安排</div></div></div>
+      <div class="ai-msg"><div class="ai-msg-inner"><div class="ai-content">好的，我根据你的行程信息整理了出差日程：<br><br>📄 <b>上海出差日程</b><br><br><b>Day 1（明天）</b><br>· 14:00 北京南站出发（G1次）<br>· 18:32 到达上海虹桥<br>· 19:30 入住酒店（建议提前预订虹桥附近）<br><br><b>Day 2（后天）</b><br>· 09:00 - 12:00 上午会议<br>· 14:00 - 17:00 下午会议<br><br>需要我帮你预订酒店，或者补充会议的具体信息吗？</div></div></div>
+    </div>
+    <div class="input-area"><div class="input-box"><div class="input-folder">📁 ~/Documents</div><div class="input-placeholder">输入你的任务...</div><div class="input-send">↑</div></div></div>
+  </div>
+</div>
+<script>
+function fit(){
+  var vp=document.getElementById('vp');
+  var s=Math.min(window.innerWidth/1090,window.innerHeight/1202);
+  vp.style.transform='scale('+s+')';
+}
+fit();window.addEventListener('resize',fit);
+</script>
+</body>
+</html>

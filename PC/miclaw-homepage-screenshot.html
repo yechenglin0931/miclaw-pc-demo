@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>MiClaw Homepage</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:3120px;height:2080px;overflow:hidden;background:#f2f2f2;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif}
+.app{width:3120px;height:2080px;display:flex;padding:24px;gap:28px}
+.sidebar{width:440px;background:#fff;border-radius:56px;padding:36px 28px;display:flex;flex-direction:column;flex-shrink:0}
+.tl-bar{display:flex;gap:12px;padding:8px 20px 36px}
+.tl{width:18px;height:18px;border-radius:50%;border:1px solid rgba(0,0,0,0.08)}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav-item{display:flex;align-items:center;gap:18px;padding:20px 26px;border-radius:22px;font-size:22px;color:rgba(0,0,0,0.75);cursor:pointer}
+.nav-item.active{background:rgba(0,0,0,0.06);font-weight:500}
+.slabel{font-size:14px;color:rgba(0,0,0,0.28);font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:0 26px;margin:36px 0 14px}
+.sessions{display:flex;flex-direction:column;gap:2px;flex:1;overflow:hidden}
+.sess{display:flex;align-items:center;gap:16px;padding:18px 26px;border-radius:20px;cursor:pointer}
+.sess.active{background:rgba(0,0,0,0.06)}
+.sdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.sinfo{flex:1;min-width:0}
+.stitle{font-size:18px;color:rgba(0,0,0,0.72);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stime{font-size:14px;color:rgba(0,0,0,0.28);margin-top:3px}
+.ubar{display:flex;align-items:center;gap:14px;padding:20px 26px;border-top:1px solid rgba(0,0,0,0.06);margin-top:20px}
+.uav{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;font-weight:600}
+.uname{font-size:18px;color:rgba(0,0,0,0.65);font-weight:500}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="sidebar">
+<div class="tl-bar"><div class="tl" style="background:#FF5C60"></div><div class="tl" style="background:#FAC800"></div><div class="tl" style="background:#35C759"></div></div>
+<div class="nav">
+<div class="nav-item active"><span>&#x1F4AC;</span> 对话</div>
+<div class="nav-item"><span>&#x1F916;</span> 助手</div>
+<div class="nav-item"><span>&#x1F517;</span> 设备互联</div>
+<div class="nav-item"><span>&#x1F4C4;</span> 资料</div>
+<div class="nav-item"><span>&#x2699;&#xFE0F;</span> 设置</div>
+</div>
+<div class="slabel">最近对话</div>
+<div class="sessions">
+<div class="sess active"><div class="sdot" style="background:#6366f1"></div><div class="sinfo"><div class="stitle">小红书游记生成</div><div class="stime">今天 14:32</div></div></div>
+<div class="sess"><div class="sdot" style="background:#06b6d4"></div><div class="sinfo"><div class="stitle">周报自动整理</div><div class="stime">今天 10:15</div></div></div>
+<div class="sess"><div class="sdot" style="background:#f59e0b"></div><div class="sinfo"><div class="stitle">会议纪要总结</div><div class="stime">昨天 16:48</div></div></div>
+<div class="sess"><div class="sdot" style="background:#10b981"></div><div class="sinfo"><div class="stitle">项目文档翻译</div><div class="stime">昨天 09:20</div></div></div>
+<div class="sess"><div class="sdot" style="background:#ec4899"></div><div class="sinfo"><div class="stitle">代码审查助手</div><div class="stime">3月16日</div></div></div>
+<div class="sess"><div class="sdot" style="background:#f59e0b"></div><div class="sinfo"><div class="stitle">出差行程规划</div><div class="stime">3月15日</div></div></div>
+</div>
+<div class="ubar"><div class="uav">Y</div><div class="uname">Yesus</div></div>
+</div>
+<div id="main"></div>
+</div>
+</body>
+</html>

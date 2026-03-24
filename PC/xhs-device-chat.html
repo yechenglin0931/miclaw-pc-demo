@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiClaw - 小红书发布（设备互联）</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes popoverIn { from { opacity: 0; transform: translateY(-6px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+  .animate-slide-up { animation: slideUp 0.5s ease-out; }
+  .animate-spin { animation: spin 1s linear infinite; }
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+  .glass {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+  }
+  .system-notice { display: flex; justify-content: center; width: 100%; }
+  .system-notice-inner {
+    background: rgba(0,0,0,0.04); border-radius: 20px; padding: 6px 16px;
+    font-size: 13px; color: rgba(0,0,0,0.35);
+  }
+  .monitor-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15);
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 12px; color: #b45309;
+  }
+</style>
+</head>
+<body class="bg-[#f2f2f2] h-screen overflow-hidden">
+<div id="app" class="size-full flex overflow-hidden p-0 md:p-4 gap-0 md:gap-5">
+
+  <!-- Sidebar -->
+  <div class="bg-white h-full rounded-none md:rounded-[44px] w-[280px] shrink-0 flex-col p-5 hidden md:flex">
+    <div class="flex items-center gap-2 px-3 pt-2 pb-6">
+      <div class="size-3 rounded-full bg-[#FF5C60] border border-black/10"></div>
+      <div class="size-3 rounded-full bg-[#FAC800] border border-black/10"></div>
+      <div class="size-3 rounded-full bg-[#35C759] border border-black/10"></div>
+    </div>
+    <div class="flex flex-col gap-0.5">
+      <div class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-black/[0.03] cursor-pointer transition-colors">
+        <span class="text-lg">💬</span><span class="text-base text-black/80">对话</span>
+      </div>
+      <div class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-black/[0.03] cursor-pointer transition-colors">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" opacity="0.8"/><circle cx="10" cy="10" r="3" fill="currentColor" opacity="0.8"/></svg>
+        <span class="text-base text-black/80">助手</span>
+      </div>
+      <div class="flex items-center gap-3 px-4 py-3 rounded-2xl bg-black/[0.06] cursor-pointer">
+        <span class="text-lg">🔗</span><span class="text-base text-black/80">设备互联</span>
+      </div>
+      <div class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-black/[0.03] cursor-pointer transition-colors">
+        <span class="text-lg">📄</span><span class="text-base text-black/80">资料</span>
+      </div>
+      <div class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-black/[0.03] cursor-pointer transition-colors">
+        <span class="text-lg">⚙️</span><span class="text-base text-black/80">设置</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Area -->
+  <div class="flex-1 flex flex-col min-w-0 bg-transparent relative">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 relative z-30">
+      <div class="flex items-center gap-3">
+        <h1 class="text-[22px] font-semibold text-black">设备互联</h1>
+        <div class="monitor-badge">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M7 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          监控模式
+        </div>
+      </div>
+      <button id="agent-status-btn" class="flex items-center gap-2 text-[13px] text-black/40 hover:text-black/60 transition-colors cursor-pointer rounded-lg px-2.5 py-1.5 hover:bg-black/[0.04]">
+        <span class="size-2 rounded-full bg-[#35C759]"></span>
+        4 个设备 Bot 在线
+        <svg class="size-3 text-black/30 transition-transform duration-200" id="agent-chevron" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+    <!-- Agent Popover -->
+    <div id="agent-popover" class="absolute right-6 top-[56px] z-50 w-[320px] hidden">
+      <div class="glass rounded-2xl border border-white/60 shadow-[0_8px_40px_rgba(0,0,0,0.10),0_1px_3px_rgba(0,0,0,0.06)] overflow-hidden" style="animation: popoverIn 0.25s cubic-bezier(0.16,1,0.3,1) forwards;">
+        <div class="px-4 pt-4 pb-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-black/40 uppercase tracking-wider">Device Bots</span>
+            <span class="text-[11px] text-black/30">4 / 4 在线</span>
+          </div>
+        </div>
+        <div class="px-2 pb-2 flex flex-col gap-0.5">
+          <div class="flex items-start gap-3 px-3 py-3"><div class="shrink-0 size-9 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center text-base shadow-sm mt-0.5">💻</div><div class="flex-1 min-w-0"><div class="flex items-center gap-2"><span class="size-[6px] rounded-full bg-[#35C759] shrink-0"></span><span class="text-[13px] font-medium text-black/80">MiClaw-PC</span><span class="text-[10px] text-black/30 border border-black/10 rounded px-1.5 leading-[18px]">重算力</span></div><div class="mt-1.5 text-[12px] text-black/40" id="pc-status">在线 · 正在处理任务</div></div></div>
+          <div class="flex items-start gap-3 px-3 py-3"><div class="shrink-0 size-9 rounded-full bg-gradient-to-br from-[#06b6d4] to-[#10b981] flex items-center justify-center text-base shadow-sm mt-0.5">📱</div><div class="flex-1 min-w-0"><div class="flex items-center gap-2"><span class="size-[6px] rounded-full bg-[#35C759] shrink-0"></span><span class="text-[13px] font-medium text-black/80">MiClaw-Phone</span><span class="text-[10px] text-black/30 border border-black/10 rounded px-1.5 leading-[18px]">相册/传感器</span></div><div class="mt-1.5 text-[12px] text-black/40" id="phone-status">在线 · 空闲中</div></div></div>
+          <div class="flex items-start gap-3 px-3 py-3"><div class="shrink-0 size-9 rounded-full bg-gradient-to-br from-[#f59e0b] to-[#ef4444] flex items-center justify-center text-base shadow-sm mt-0.5">🚗</div><div class="flex-1 min-w-0"><div class="flex items-center gap-2"><span class="size-[6px] rounded-full bg-[#35C759] shrink-0"></span><span class="text-[13px] font-medium text-black/80">MiClaw-Car</span><span class="text-[10px] text-black/30 border border-black/10 rounded px-1.5 leading-[18px]">导航/车控</span></div><div class="mt-1.5 text-[12px] text-black/40">在线 · 空闲中</div></div></div>
+          <div class="flex items-start gap-3 px-3 py-3"><div class="shrink-0 size-9 rounded-full bg-gradient-to-br from-[#ec4899] to-[#a855f7] flex items-center justify-center text-base shadow-sm mt-0.5">📋</div><div class="flex-1 min-w-0"><div class="flex items-center gap-2"><span class="size-[6px] rounded-full bg-[#35C759] shrink-0"></span><span class="text-[13px] font-medium text-black/80">MiClaw-Pad</span><span class="text-[10px] text-black/30 border border-black/10 rounded px-1.5 leading-[18px]">手写笔/大屏</span></div><div class="mt-1.5 text-[12px] text-black/40">在线 · 空闲中</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Messages -->
+    <div id="chat-messages" class="flex-1 overflow-y-auto scrollbar-thin px-6 py-4 flex flex-col gap-5"></div>
+
+    <!-- Disabled Input -->
+    <div class="px-6 pb-6 pt-2">
+      <div class="bg-white/60 rounded-2xl px-5 py-3.5 flex items-center gap-3 border border-black/[0.06]">
+        <span class="flex-1 text-[15px] text-black/25 select-none">监控模式下无法发送消息</span>
+        <div class="size-9 rounded-full bg-black/10 flex items-center justify-center shrink-0 cursor-not-allowed">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8.5L8 3.5L13 8.5M8 3.5V13" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var chatMessages = document.getElementById('chat-messages');
+var agentBtn = document.getElementById('agent-status-btn');
+var agentPopover = document.getElementById('agent-popover');
+var agentChevron = document.getElementById('agent-chevron');
+var pcStatus = document.getElementById('pc-status');
+var phoneStatus = document.getElementById('phone-status');
+
+// Popover
+var popoverOpen = false;
+agentBtn.addEventListener('click', function(e) {
+  e.stopPropagation();
+  popoverOpen = !popoverOpen;
+  agentPopover.classList.toggle('hidden', !popoverOpen);
+  agentChevron.style.transform = popoverOpen ? 'rotate(180deg)' : '';
+});
+document.addEventListener('click', function(e) {
+  if (popoverOpen && !agentPopover.contains(e.target) && !agentBtn.contains(e.target)) {
+    popoverOpen = false; agentPopover.classList.add('hidden'); agentChevron.style.transform = '';
+  }
+});
+
+// Helpers
+var bots = {
+  pc:    { emoji: '💻', name: 'MiClaw-PC',   gradient: 'from-[#6366f1] to-[#8b5cf6]' },
+  phone: { emoji: '📱', name: 'MiClaw-Phone', gradient: 'from-[#06b6d4] to-[#10b981]' }
+};
+function avatarHtml(type) {
+  var b = bots[type];
+  return '<div class="shrink-0 size-10 rounded-full bg-gradient-to-br ' + b.gradient + ' flex items-center justify-center text-lg shadow-sm">' + b.emoji + '</div>';
+}
+function nameHtml(type) {
+  var b = bots[type];
+  return '<span class="text-sm font-medium text-black/60">' + b.emoji + ' ' + b.name + '</span>';
+}
+function mention(name) {
+  return '<span class="inline-flex items-center bg-[#d1e3ff] text-[#2563eb] rounded-full px-2.5 py-0.5 mx-0.5 text-sm whitespace-nowrap">@' + name + '</span>';
+}
+function systemNotice(text) {
+  return '<div class="system-notice animate-fade-in"><div class="system-notice-inner">' + text + '</div></div>';
+}
+function loadingIndicator(text) {
+  return '<div class="flex items-center gap-2 text-[13px] text-black/40 mb-1"><svg class="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.2"/><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg><span>' + text + '</span></div>';
+}
+function thinkingDone(text) {
+  return '<div class="flex items-center gap-1.5 text-[13px] text-[#10b981] mb-1"><span>✦</span><span>' + text + '</span></div>';
+}
+function botBubble(type, content, extra) {
+  extra = extra || '';
+  return '<div class="flex items-start gap-3 w-full animate-slide-up">'
+    + avatarHtml(type)
+    + '<div class="flex flex-col gap-1 max-w-[80%]">'
+    + nameHtml(type)
+    + '<div class="bg-white rounded-[20px] px-4 py-3 text-[15px] text-black leading-relaxed shadow-[0_1px_3px_rgba(0,0,0,0.04)]">'
+    + content + '</div>'
+    + extra
+    + '</div></div>';
+}
+
+var photoUrls = [
+  'https://images.unsplash.com/photo-1668900030471-170e936b201a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400',
+  'https://images.unsplash.com/photo-1683041133830-e781d3283991?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400',
+  'https://images.unsplash.com/photo-1625749670846-8d5629e85a01?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400',
+  'https://images.unsplash.com/photo-1693358521821-d115c4224a38?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400'
+];
+function photoGrid() {
+  var imgs = photoUrls.map(function(url) {
+    return '<div class="rounded-xl overflow-hidden aspect-square bg-gray-100"><img src="' + url + '" alt="风景照片" class="w-full h-full object-cover" onerror="this.outerHTML=\'<div class=\\\'flex items-center justify-center w-full h-full text-2xl text-black/20\\\'>🖼️</div>\'"></div>';
+  }).join('');
+  return '<div class="grid grid-cols-2 gap-2 mt-3 w-[320px]">' + imgs + '</div>';
+}
+
+// --- Full device-to-device collaboration flow ---
+var steps = [
+  // System: task received
+  { delay: 500, render: function() {
+    return systemNotice('📋 用户发起任务：帮我找一下我昨天拍的照片，写一篇小红书游记');
+  }},
+
+  // PC → Phone: need photos
+  { delay: 2500, render: function() {
+    pcStatus.textContent = '在线 · 正在分析任务';
+    return botBubble('pc', mention('MiClaw-Phone') + ' 用户要写小红书游记，需要昨天拍的风景照。帮我检索一下手机相册，把昨天的照片同步过来～');
+  }},
+
+  // Phone: loading
+  { delay: 4500, render: function() {
+    phoneStatus.textContent = '在线 · 正在检索相册';
+    return botBubble('phone', loadingIndicator('正在检索手机相册...'));
+  }},
+
+  // Phone: found photos
+  { delay: 7500, render: function() {
+    return botBubble('phone',
+      thinkingDone('检索完成')
+      + '<div class="leading-relaxed">'
+      + mention('MiClaw-PC') + ' 找到了！昨天一共拍了 12 张，筛选出 4 张风景照质量最好的，已经同步到你的工作台了 📤'
+      + photoGrid()
+      + '</div>'
+    );
+  }},
+
+  // PC: generating content
+  { delay: 10000, render: function() {
+    pcStatus.textContent = '在线 · 正在生成文案';
+    phoneStatus.textContent = '在线 · 空闲中';
+    return botBubble('pc', loadingIndicator('收到素材，正在分析图片内容并生成游记...'));
+  }},
+
+  // PC: content ready, notify phone
+  { delay: 14000, render: function() {
+    return botBubble('pc',
+      thinkingDone('文案生成完成')
+      + '<div class="leading-relaxed">'
+      + mention('MiClaw-Phone') + ' 游记写好了，标题是「一场说走就走的旅行｜治愈系风景合集」，配了 6 个标签。已经提交给用户确认，等用户说 OK 就交给你发布 👌'
+      + '</div>'
+    );
+  }},
+
+  // Phone acknowledges
+  { delay: 16000, render: function() {
+    return botBubble('phone', '收到，随时待命！用户确认了我就直接发 📲');
+  }},
+
+  // System: user confirmed
+  { delay: 19000, render: function() {
+    return systemNotice('✅ 用户已确认文案，授权发布');
+  }},
+
+  // PC → Phone: go publish
+  { delay: 20500, render: function() {
+    pcStatus.textContent = '在线 · 等待发布结果';
+    return botBubble('pc', mention('MiClaw-Phone') + ' 用户确认了，文案和图片都没问题。请在小红书发布这篇游记，4 张图按顺序上传，标签别漏了 🏷️');
+  }},
+
+  // Phone: publishing
+  { delay: 22500, render: function() {
+    phoneStatus.textContent = '在线 · 正在发布到小红书';
+    return botBubble('phone', loadingIndicator('正在连接小红书，上传图片并发布...'));
+  }},
+
+  // Phone: published
+  { delay: 26000, render: function() {
+    phoneStatus.textContent = '在线 · 空闲中';
+    pcStatus.textContent = '在线 · 空闲中';
+    return botBubble('phone',
+      thinkingDone('发布成功')
+      + '<div class="leading-relaxed">'
+      + mention('MiClaw-PC') + ' 搞定了 🎉 游记已经发到小红书了！'
+      + '<div class="mt-3 bg-black/[0.03] rounded-2xl p-4 border border-black/[0.06]">'
+      + '<div class="flex items-center gap-2 mb-2"><span class="size-2 rounded-full bg-[#35C759]"></span><span class="text-[13px] text-black/60">发布状态：已发布</span></div>'
+      + '<div class="text-[13px] text-black/50 leading-relaxed">'
+      + '📝 标题：一场说走就走的旅行｜治愈系风景合集<br>'
+      + '🖼️ 图片：4 张已上传<br>'
+      + '🏷️ 标签：6 个已添加<br>'
+      + '🔗 链接：<span class="text-[#2563eb] underline cursor-pointer">xiaohongshu.com/explore/abc123</span>'
+      + '</div></div></div>'
+    );
+  }},
+
+  // PC wraps up
+  { delay: 28500, render: function() {
+    return botBubble('pc', '漂亮 👏 已经把发布结果同步给用户了。这波配合丝滑～');
+  }},
+
+  // System
+  { delay: 30500, render: function() {
+    return systemNotice('任务完成 · MiClaw-PC + MiClaw-Phone 协作 · 耗时 42 秒 ✅');
+  }}
+];
+
+// Run with loading→final replacement
+function runSteps() {
+  var rendered = [];
+  steps.forEach(function(step, i) {
+    setTimeout(function() {
+      // Replace loading: step 2→3, step 4→5, step 9→10
+      if (i === 3 && rendered[2]) { rendered[2].remove(); rendered[2] = null; }
+      if (i === 5 && rendered[4]) { rendered[4].remove(); rendered[4] = null; }
+      if (i === 10 && rendered[9]) { rendered[9].remove(); rendered[9] = null; }
+      var html = step.render();
+      if (html) {
+        var div = document.createElement('div');
+        div.innerHTML = html;
+        chatMessages.appendChild(div);
+        rendered[i] = div;
+      }
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, step.delay);
+  });
+}
+runSteps();
+</script>
+</body>
+</html>
