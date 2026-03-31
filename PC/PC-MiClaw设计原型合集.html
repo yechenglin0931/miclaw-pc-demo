@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PC MiClaw 设计原型合集</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+  .tab-bar {
+    height: 48px;
+    background: #FFFFFF;
+    border-bottom: 1px solid rgba(0,0,0,.06);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
+
+  .tab-bar-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: rgba(13,13,13,.88);
+    margin-right: 32px;
+    white-space: nowrap;
+  }
+
+  .tab-items { display: flex; height: 100%; gap: 4px; }
+
+  .tab-item {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(13,13,13,.55);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color .2s, border-color .2s;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .tab-item:hover { color: rgba(13,13,13,.72); }
+  .tab-item.active { color: rgba(13,13,13,.88); border-bottom-color: #2979FF; }
+
+  .iframe-container {
+    position: fixed;
+    top: 48px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  .iframe-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: none;
+  }
+
+  .iframe-container iframe.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="tab-bar">
+  <div class="tab-bar-title">PC MiClaw 设计原型</div>
+  <div class="tab-items">
+    <div class="tab-item active" data-index="0">💬 对话思考过程</div>
+    <div class="tab-item" data-index="1">🔒 隐私授权弹窗</div>
+  </div>
+</div>
+
+<div class="iframe-container">
+  <iframe class="active" src="PC-MiClaw对话思考过程.html"></iframe>
+  <iframe src="PC-MiClaw隐私授权弹窗.html"></iframe>
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('.tab-item');
+  const frames = document.querySelectorAll('.iframe-container iframe');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const idx = +tab.dataset.index;
+      tabs.forEach(t => t.classList.remove('active'));
+      frames.forEach(f => f.classList.remove('active'));
+      tab.classList.add('active');
+      frames[idx].classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PC MiClaw 对话思考过程 — 设计原型</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#F5F5F5;--sidebar-bg:#FFFFFF;--chat-bg:#FFFFFF;
+  --text-primary:rgba(13,13,13,.88);--text-secondary:rgba(13,13,13,.55);--text-weak:rgba(13,13,13,.35);
+  --border:rgba(0,0,0,.06);--accent:#2979FF;--accent-light:rgba(41,121,255,.08);
+  --green:#34C759;--green-bg:rgba(52,199,89,.1);--amber:#FF9500;--amber-bg:rgba(255,149,0,.1);
+  --red:#FF3B30;--card-bg:rgba(0,0,0,.025);--tool-chip-bg:rgba(0,0,0,.04);
+  --radius-l:20px;--radius-m:14px;--radius-s:10px;
+  --font:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--font)}
+.app{display:flex;height:100%;padding:16px;gap:16px}
+/* Sidebar */
+.sidebar{width:260px;background:var(--sidebar-bg);border-radius:var(--radius-l);padding:20px 14px;display:flex;flex-direction:column;flex-shrink:0}
+.tl-bar{display:flex;gap:8px;padding:4px 12px 20px}
+.tl{width:12px;height:12px;border-radius:50%}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-s);font-size:13px;color:var(--text-secondary);cursor:pointer;transition:background .15s}
+.nav-item:hover{background:rgba(0,0,0,.04)}
+.nav-item.active{background:rgba(0,0,0,.06);color:var(--text-primary);font-weight:500}
+.nav-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.slabel{font-size:11px;color:var(--text-weak);font-weight:600;text-transform:uppercase;letter-spacing:1px;padding:0 14px;margin:24px 0 8px}
+.sessions{display:flex;flex-direction:column;gap:1px;flex:1;overflow:hidden}
+.sess{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-s);cursor:pointer;transition:background .15s}
+.sess:hover{background:rgba(0,0,0,.04)}
+.sess.active{background:rgba(0,0,0,.06)}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.stitle{font-size:13px;color:var(--text-secondary);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sess.active .stitle{color:var(--text-primary);font-weight:500}
+
+/* Main chat area */
+.main{flex:1;display:flex;flex-direction:column;background:var(--chat-bg);border-radius:var(--radius-l);overflow:hidden}
+.chat-header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.chat-title{font-size:15px;font-weight:500;color:var(--text-primary)}
+.chat-body{flex:1;overflow-y:auto;padding:24px 32px;display:flex;flex-direction:column;gap:20px}
+.chat-input-area{padding:16px 24px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.chat-input{flex:1;height:40px;border:1px solid var(--border);border-radius:20px;padding:0 16px;font-size:13px;font-family:var(--font);outline:none;background:var(--bg);color:var(--text-primary);transition:border-color .2s}
+.chat-input:focus{border-color:var(--accent)}
+.send-btn{width:36px;height:36px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s}
+.send-btn:active{transform:scale(.95)}
+.send-btn svg{width:16px;height:16px}
+/* Message bubbles */
+.msg{display:flex;gap:10px;max-width:85%}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.avatar.ai{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
+.avatar.user{background:rgba(0,0,0,.08);color:var(--text-secondary)}
+.bubble{padding:12px 16px;border-radius:var(--radius-m);font-size:13.5px;line-height:1.65;color:var(--text-primary)}
+.msg.ai .bubble{background:var(--card-bg)}
+.msg.user .bubble{background:var(--accent);color:#fff}
+
+/* ===== 思考过程块 ===== */
+.thinking-block{border:1px solid var(--border);border-radius:var(--radius-m);overflow:hidden;transition:all .3s ease}
+.thinking-header{display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;user-select:none;transition:background .15s}
+.thinking-header:hover{background:rgba(0,0,0,.02)}
+.thinking-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center}
+.thinking-title{flex:1;font-size:13.5px;font-weight:500;color:var(--text-primary)}
+.thinking-title.shimmer{background:linear-gradient(90deg,var(--text-primary) 0%,var(--text-weak) 50%,var(--text-primary) 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 2s ease-in-out infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.chevron{width:20px;height:20px;transition:transform .25s ease;color:var(--text-weak)}
+.chevron.open{transform:rotate(180deg)}
+
+/* Timeline */
+.thinking-body{padding:0 16px 14px;display:none}
+.thinking-body.open{display:block}
+.timeline{display:flex;flex-direction:column;gap:0}
+.step{display:flex;gap:10px;position:relative}
+.step-left{display:flex;flex-direction:column;align-items:center;width:20px;flex-shrink:0}
+.step-dot{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:1}
+.step-dot.completed{background:var(--green-bg)}
+.step-dot.completed svg{color:var(--green)}
+.step-dot.running{background:transparent}
+.step-dot.error{background:var(--amber-bg)}
+.step-dot.error svg{color:var(--amber)}
+.step-line{width:1px;flex:1;min-height:12px;background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 3px,transparent 3px,transparent 6px)}
+.step-content{flex:1;padding-bottom:14px}
+.step:last-child .step-content{padding-bottom:0}
+.step:last-child .step-line{display:none}
+.step-label{font-size:12.5px;font-weight:500;color:var(--text-primary);margin-bottom:3px}
+.step-text{font-size:12.5px;color:var(--text-secondary);line-height:1.55;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+/* Tool chip */
+.tool-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:var(--tool-chip-bg);border-radius:8px;font-size:12px;color:var(--text-secondary);cursor:pointer;transition:background .15s}
+.tool-chip:hover{background:rgba(0,0,0,.07)}
+.tool-chip-icon{font-size:11px}
+
+/* Collapsed preview */
+.collapsed-preview{display:flex;align-items:flex-start;gap:8px;padding:4px 16px 12px}
+.collapsed-preview .step-dot{margin-top:1px}
+.collapsed-preview-content{flex:1}
+.collapsed-preview-label{font-size:12.5px;font-weight:500;color:var(--text-primary);margin-bottom:2px}
+.collapsed-preview-text{font-size:12.5px;color:var(--text-secondary);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* Spinner */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:14px;height:14px;border:1.5px solid var(--border);border-top-color:var(--text-secondary);border-radius:50%;animation:spin .7s linear infinite}
+
+/* Tool detail bottom sheet */
+.tool-detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:100;display:none;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .2s}
+.tool-detail-overlay.show{display:flex;opacity:1}
+.tool-detail-sheet{width:560px;max-height:70vh;background:#fff;border-radius:var(--radius-l) var(--radius-l) 0 0;padding:24px;overflow-y:auto;transform:translateY(100%);transition:transform .3s ease}
+.tool-detail-overlay.show .tool-detail-sheet{transform:translateY(0)}
+.tool-detail-title{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.tool-detail-section{margin-bottom:14px}
+.tool-detail-label{font-size:11px;font-weight:600;color:var(--text-weak);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.tool-detail-code{background:var(--card-bg);border-radius:var(--radius-s);padding:12px;font-size:12px;font-family:'SF Mono','Fira Code',monospace;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap;word-break:break-all}
+.tool-detail-status{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.tool-detail-status.success{background:var(--green-bg);color:var(--green)}
+.tool-detail-status.error{background:var(--amber-bg);color:var(--amber)}
+.tool-detail-close{position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.06);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-secondary)}
+
+/* Design spec annotations */
+.spec-panel{width:320px;background:var(--sidebar-bg);border-radius:var(--radius-l);padding:20px;flex-shrink:0;overflow-y:auto}
+.spec-title{font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.spec-section{margin-bottom:18px}
+.spec-section-title{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.spec-item{display:flex;gap:8px;margin-bottom:6px;font-size:12px;color:var(--text-secondary);line-height:1.5}
+.spec-item .label{color:var(--text-primary);font-weight:500;white-space:nowrap;min-width:60px}
+.spec-color{width:14px;height:14px;border-radius:4px;flex-shrink:0;border:1px solid var(--border)}
+.spec-divider{height:1px;background:var(--border);margin:14px 0}
+</style>
+</head>
+<body>
+<div class="app">
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="tl-bar"><div class="tl" style="background:#FF5C60"></div><div class="tl" style="background:#FAC800"></div><div class="tl" style="background:#35C759"></div></div>
+  <div class="nav">
+    <div class="nav-item active"><div class="nav-icon">💬</div>对话</div>
+    <div class="nav-item"><div class="nav-icon">🤖</div>助手</div>
+    <div class="nav-item"><div class="nav-icon">🔗</div>设备互联</div>
+    <div class="nav-item"><div class="nav-icon">⚙️</div>设置</div>
+  </div>
+  <div class="slabel">最近对话</div>
+  <div class="sessions">
+    <div class="sess active"><div class="sdot" style="background:#6366f1"></div><div class="stitle">帮我规划明天的行程</div></div>
+    <div class="sess"><div class="sdot" style="background:#06b6d4"></div><div class="stitle">周报自动整理</div></div>
+    <div class="sess"><div class="sdot" style="background:#f59e0b"></div><div class="stitle">会议纪要总结</div></div>
+  </div>
+</div>
+
+<!-- Main Chat -->
+<div class="main">
+  <div class="chat-header">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+    <div class="chat-title">帮我规划明天的行程</div>
+  </div>
+  <div class="chat-body" id="chatBody">
+
+    <!-- User message -->
+    <div class="msg user">
+      <div class="avatar user">Y</div>
+      <div class="bubble">帮我规划一下明天的行程，我上午10点有个会议，下午想去健身</div>
+    </div>
+
+    <!-- AI message with COMPLETED thinking block -->
+    <div class="msg ai">
+      <div class="avatar ai">M</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <!-- Thinking Block - Completed & Collapsed -->
+        <div class="thinking-block" id="block1">
+          <div class="thinking-header" onclick="toggleBlock('block1')">
+            <div class="thinking-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2" opacity=".4"/><path d="M5 8.5l2 2 4-4" stroke="#34C759" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="thinking-title">已完成 · 调用了日历查询</div>
+            <svg class="chevron" id="chevron1" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <!-- Collapsed preview -->
+          <div class="collapsed-preview" id="preview1">
+            <div class="step-dot completed"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 8.5l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="collapsed-preview-content">
+              <div class="collapsed-preview-label">调用工具</div>
+              <div class="tool-chip" onclick="showToolDetail(event,'calendar')"><span class="tool-chip-icon">📅</span>日历查询</div>
+            </div>
+          </div>
+          <!-- Expanded timeline -->
+          <div class="thinking-body" id="body1">
+            <div class="timeline">
+              <div class="step">
+                <div class="step-left"><div class="step-dot completed"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 8.5l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="step-line"></div></div>
+                <div class="step-content"><div class="step-label">深度思考</div><div class="step-text">用户需要规划明天的行程，提到了上午10点的会议和下午健身。我需要先查看日历确认是否有其他安排，然后查询天气情况来给出合理建议。</div></div>
+              </div>
+              <div class="step">
+                <div class="step-left"><div class="step-dot completed"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 8.5l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="step-line"></div></div>
+                <div class="step-content"><div class="step-label">调用工具</div><div class="tool-chip" onclick="showToolDetail(event,'calendar')"><span class="tool-chip-icon">📅</span>日历查询</div><div class="step-text" style="margin-top:4px">查询到明天有3个日程：10:00 产品评审会、14:00 1v1、19:00 团建晚餐</div></div>
+              </div>
+              <div class="step">
+                <div class="step-left"><div class="step-dot completed"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 8.5l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+                <div class="step-content"><div class="step-label">调用工具</div><div class="tool-chip" onclick="showToolDetail(event,'weather')"><span class="tool-chip-icon">🌤</span>天气查询</div><div class="step-text" style="margin-top:4px">明天晴，22-28°C，适合户外活动</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- AI reply text -->
+        <div class="bubble" style="background:transparent;padding:4px 0">根据你的日历和明天的天气，我帮你规划了行程：<br><br>🕙 <b>10:00-11:30</b> 产品评审会<br>🍽 <b>11:30-12:30</b> 午餐<br>🏋️ <b>13:00-14:00</b> 健身（建议提前到下午1点，因为2点有1v1）<br>👥 <b>14:00-14:30</b> 1v1<br>☕ <b>14:30-18:30</b> 自由工作时间<br>🍻 <b>19:00</b> 团建晚餐<br><br>明天天气不错（22-28°C），健身后可以考虑户外散步放松。</div>
+      </div>
+    </div>
+
+    <!-- User message 2 -->
+    <div class="msg user">
+      <div class="avatar user">Y</div>
+      <div class="bubble">帮我查一下附近有什么好的健身房</div>
+    </div>
+
+    <!-- AI message with RUNNING thinking block (streaming state) -->
+    <div class="msg ai">
+      <div class="avatar ai">M</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <div class="thinking-block" id="block2">
+          <div class="thinking-header" onclick="toggleBlock('block2')">
+            <div class="thinking-icon"><div class="spinner"></div></div>
+            <div class="thinking-title shimmer">正在搜索附近健身房...</div>
+            <svg class="chevron" id="chevron2" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="collapsed-preview" id="preview2">
+            <div class="step-dot running"><div class="spinner"></div></div>
+            <div class="collapsed-preview-content">
+              <div class="collapsed-preview-label">调用工具</div>
+              <div class="tool-chip"><span class="tool-chip-icon">🌐</span>网页搜索</div>
+            </div>
+          </div>
+          <div class="thinking-body" id="body2">
+            <div class="timeline">
+              <div class="step">
+                <div class="step-left"><div class="step-dot completed"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 8.5l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="step-line"></div></div>
+                <div class="step-content"><div class="step-label">深度思考</div><div class="step-text">用户想找附近的健身房，我需要先获取位置信息，然后搜索附近的健身房推荐。</div></div>
+              </div>
+              <div class="step">
+                <div class="step-left"><div class="step-dot completed"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 8.5l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="step-line"></div></div>
+                <div class="step-content"><div class="step-label">调用工具</div><div class="tool-chip"><span class="tool-chip-icon">📍</span>位置获取</div><div class="step-text" style="margin-top:4px">当前位置：北京市海淀区清河</div></div>
+              </div>
+              <div class="step">
+                <div class="step-left"><div class="step-dot running"><div class="spinner"></div></div></div>
+                <div class="step-content"><div class="step-label">调用工具</div><div class="tool-chip"><span class="tool-chip-icon">🌐</span>网页搜索</div><div class="step-text" style="margin-top:4px;color:var(--text-weak)">搜索中...</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI message with ERROR step -->
+    <div class="msg ai" style="display:none" id="errorExample">
+      <div class="avatar ai">M</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <div class="thinking-block" id="block3">
+          <div class="thinking-header" onclick="toggleBlock('block3')">
+            <div class="thinking-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#FF9500" stroke-width="1.2"/><path d="M8 5v3.5M8 10.5v.5" stroke="#FF9500" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+            <div class="thinking-title">部分完成 · 网络搜索失败</div>
+            <svg class="chevron" id="chevron3" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="thinking-body" id="body3" style="display:block">
+            <div class="timeline">
+              <div class="step">
+                <div class="step-left"><div class="step-dot completed"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 8.5l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="step-line"></div></div>
+                <div class="step-content"><div class="step-label">深度思考</div><div class="step-text">分析用户需求...</div></div>
+              </div>
+              <div class="step">
+                <div class="step-left"><div class="step-dot error"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 5v3.5M8 10.5v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div></div>
+                <div class="step-content"><div class="step-label">调用工具</div><div class="tool-chip"><span class="tool-chip-icon">🌐</span>网页搜索</div><div class="step-text" style="margin-top:4px;color:var(--red)">网络请求超时，已使用缓存数据</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="chat-input-area">
+    <input class="chat-input" placeholder="发送消息..." />
+    <button class="send-btn"><svg viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<!-- Design Spec Panel -->
+<div class="spec-panel">
+  <div class="spec-title">📐 设计规范说明</div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">思考过程块</div>
+    <div class="spec-item"><span class="label">圆角</span>14px（与消息气泡一致）</div>
+    <div class="spec-item"><span class="label">边框</span>1px solid rgba(0,0,0,.06)</div>
+    <div class="spec-item"><span class="label">内边距</span>Header 12px 16px</div>
+    <div class="spec-item"><span class="label">标题字号</span>13.5px / Medium</div>
+  </div>
+
+  <div class="spec-divider"></div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">三种状态</div>
+    <div class="spec-item"><span class="label">进行中</span>spinner + shimmer 文字动画</div>
+    <div class="spec-item"><span class="label">已完成</span>绿色勾 + 静态标题</div>
+    <div class="spec-item"><span class="label">部分失败</span>琥珀色感叹号</div>
+  </div>
+
+  <div class="spec-divider"></div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">时间线</div>
+    <div class="spec-item"><span class="label">节点尺寸</span>18×18px 圆形</div>
+    <div class="spec-item"><span class="label">连接线</span>1px 虚线，间距 3px</div>
+    <div class="spec-item"><span class="label">步骤间距</span>14px</div>
+    <div class="spec-item"><span class="label">✓ 完成</span><div class="spec-color" style="background:#34C759"></div>绿色</div>
+    <div class="spec-item"><span class="label">⚠ 错误</span><div class="spec-color" style="background:#FF9500"></div>琥珀色</div>
+    <div class="spec-item"><span class="label">⏳ 运行</span>spinner 动画</div>
+  </div>
+
+  <div class="spec-divider"></div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">工具芯片</div>
+    <div class="spec-item"><span class="label">背景</span>rgba(0,0,0,.04)</div>
+    <div class="spec-item"><span class="label">圆角</span>8px</div>
+    <div class="spec-item"><span class="label">字号</span>12px</div>
+    <div class="spec-item"><span class="label">内边距</span>4px 10px</div>
+    <div class="spec-item"><span class="label">交互</span>hover 加深 + 点击弹出详情</div>
+  </div>
+
+  <div class="spec-divider"></div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">折叠/展开</div>
+    <div class="spec-item"><span class="label">默认态</span>折叠（显示最后一步预览）</div>
+    <div class="spec-item"><span class="label">动画</span>chevron 旋转 180° / 200ms</div>
+    <div class="spec-item"><span class="label">内容</span>fadeIn + expandVertically</div>
+    <div class="spec-item"><span class="label">点击区域</span>整个 header 行</div>
+  </div>
+
+  <div class="spec-divider"></div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">工具详情弹窗</div>
+    <div class="spec-item"><span class="label">触发</span>点击工具芯片</div>
+    <div class="spec-item"><span class="label">位置</span>底部弹出 sheet</div>
+    <div class="spec-item"><span class="label">宽度</span>560px 居中</div>
+    <div class="spec-item"><span class="label">内容</span>工具名 + 参数 JSON + 结果 + 耗时</div>
+    <div class="spec-item"><span class="label">关闭</span>点击遮罩或关闭按钮</div>
+  </div>
+
+  <div class="spec-divider"></div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">与手机端的差异</div>
+    <div class="spec-item" style="flex-direction:column;gap:4px">
+      <span>1. PC 端宽度充裕，折叠预览可显示更多文字（3行 vs 手机2行）</span>
+      <span>2. 工具详情用底部 sheet 而非全屏弹窗</span>
+      <span>3. hover 态更丰富（手机无 hover）</span>
+      <span>4. 时间线节点间距更大（14px vs 手机12px）</span>
+    </div>
+  </div>
+
+  <div class="spec-divider"></div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">交互操作</div>
+    <div class="spec-item" style="flex-direction:column;gap:4px">
+      <span>👆 点击思考块 header → 展开/折叠</span>
+      <span>👆 点击工具芯片 → 弹出工具详情</span>
+      <span>👆 点击遮罩 → 关闭详情弹窗</span>
+      <span>👆 点击「显示错误示例」→ 查看异常态</span>
+    </div>
+  </div>
+
+  <div class="spec-divider"></div>
+  <button onclick="document.getElementById('errorExample').style.display='flex';this.textContent='已显示'" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:transparent;cursor:pointer;font-size:12px;color:var(--text-secondary);font-family:var(--font)">显示错误状态示例</button>
+</div>
+
+<!-- Tool Detail Bottom Sheet -->
+<div class="tool-detail-overlay" id="toolOverlay" onclick="closeToolDetail(event)">
+  <div class="tool-detail-sheet" style="position:relative" onclick="event.stopPropagation()">
+    <button class="tool-detail-close" onclick="closeToolDetail()">✕</button>
+    <div class="tool-detail-title" id="toolDetailTitle">📅 日历查询</div>
+    <div class="tool-detail-section">
+      <div class="tool-detail-label">状态</div>
+      <div class="tool-detail-status success" id="toolDetailStatus">✓ 已完成 · 1.2s</div>
+    </div>
+    <div class="tool-detail-section">
+      <div class="tool-detail-label">参数</div>
+      <div class="tool-detail-code" id="toolDetailArgs">{
+  "action": "read_calendar",
+  "date": "2026-04-01",
+  "include_all_day": true
+}</div>
+    </div>
+    <div class="tool-detail-section">
+      <div class="tool-detail-label">返回结果</div>
+      <div class="tool-detail-code" id="toolDetailResult">找到 3 个日程：
+1. 10:00-11:30 产品评审会（会议室 A）
+2. 14:00-14:30 1v1 with 张三
+3. 19:00-21:00 团建晚餐（望京 SOHO）</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .app -->
+
+<script>
+function toggleBlock(id){
+  var body=document.getElementById('body'+id.replace('block',''));
+  var chevron=document.getElementById('chevron'+id.replace('block',''));
+  var preview=document.getElementById('preview'+id.replace('block',''));
+  if(!body)return;
+  var isOpen=body.classList.contains('open');
+  if(isOpen){body.classList.remove('open');chevron.classList.remove('open');if(preview)preview.style.display=''}
+  else{body.classList.add('open');chevron.classList.add('open');if(preview)preview.style.display='none'}
+}
+var toolData={
+  calendar:{title:'📅 日历查询',status:'✓ 已完成 · 1.2s',statusClass:'success',args:'{\n  "action": "read_calendar",\n  "date": "2026-04-01",\n  "include_all_day": true\n}',result:'找到 3 个日程：\n1. 10:00-11:30 产品评审会（会议室 A）\n2. 14:00-14:30 1v1 with 张三\n3. 19:00-21:00 团建晚餐（望京 SOHO）'},
+  weather:{title:'🌤 天气查询',status:'✓ 已完成 · 0.8s',statusClass:'success',args:'{\n  "action": "get_weather",\n  "location": "北京",\n  "date": "2026-04-01"\n}',result:'明天天气：晴\n温度：22-28°C\n风力：微风\n空气质量：良\n适合户外活动'}
+};
+function showToolDetail(e,type){
+  if(e)e.stopPropagation();
+  var d=toolData[type]||toolData.calendar;
+  document.getElementById('toolDetailTitle').textContent=d.title;
+  document.getElementById('toolDetailStatus').textContent=d.status;
+  document.getElementById('toolDetailStatus').className='tool-detail-status '+d.statusClass;
+  document.getElementById('toolDetailArgs').textContent=d.args;
+  document.getElementById('toolDetailResult').textContent=d.result;
+  document.getElementById('toolOverlay').classList.add('show');
+}
+function closeToolDetail(e){
+  if(e&&e.target!==document.getElementById('toolOverlay'))return;
+  document.getElementById('toolOverlay').classList.remove('show');
+  if(!e)document.getElementById('toolOverlay').classList.remove('show');
+}
+</script>
+</body>
+</html>

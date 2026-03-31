@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PC MiClaw 隐私授权弹窗 — 设计原型</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#F5F5F5;--card-bg:#FFFFFF;
+  --text-primary:rgba(13,13,13,.88);--text-secondary:rgba(13,13,13,.55);--text-weak:rgba(13,13,13,.35);
+  --border:rgba(0,0,0,.06);--accent:#2979FF;--accent-hover:#1565C0;--accent-light:rgba(41,121,255,.06);
+  --green:#34C759;--green-bg:rgba(52,199,89,.08);
+  --red:#FF3B30;--amber:#FF9500;
+  --radius-l:24px;--radius-m:16px;--radius-s:10px;
+  --font:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--font)}
+.app{display:flex;height:100%;padding:16px;gap:16px}
+/* Flow container */
+.flow-container{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;position:relative}
+.flow-label{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:1px}
+.flow-arrow{color:var(--text-weak);font-size:20px;line-height:1}
+
+/* Overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.overlay.show{opacity:1;pointer-events:auto}
+
+/* Dialog base */
+.dialog{background:var(--card-bg);border-radius:var(--radius-l);width:480px;max-height:85vh;overflow:hidden;transform:scale(.96) translateY(8px);transition:transform .3s cubic-bezier(.16,1,.3,1);display:flex;flex-direction:column}
+.overlay.show .dialog{transform:scale(1) translateY(0)}
+.dialog-body{padding:32px 32px 0;overflow-y:auto;flex:1}
+.dialog-footer{padding:20px 32px 28px;display:flex;gap:12px;justify-content:flex-end}
+
+/* Logo area */
+.logo-area{display:flex;flex-direction:column;align-items:center;margin-bottom:24px}
+.logo-circle{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.logo-circle svg{width:32px;height:32px}
+.logo-title{font-size:20px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
+.logo-subtitle{font-size:13px;color:var(--text-secondary);text-align:center;line-height:1.6}
+
+/* Permission items */
+.perm-list{display:flex;flex-direction:column;gap:2px;margin:20px 0}
+.perm-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:var(--radius-s);transition:background .15s}
+.perm-item:hover{background:rgba(0,0,0,.02)}
+.perm-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.perm-icon.blue{background:var(--accent-light)}
+.perm-icon.green{background:var(--green-bg)}
+.perm-icon.amber{background:rgba(255,149,0,.08)}
+.perm-info{flex:1}
+.perm-name{font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:3px}
+.perm-desc{font-size:12.5px;color:var(--text-secondary);line-height:1.5}
+
+/* Links */
+.link-row{display:flex;gap:16px;justify-content:center;margin:16px 0 4px}
+.link{font-size:12px;color:var(--accent);text-decoration:none;cursor:pointer}
+.link:hover{text-decoration:underline}
+
+/* Buttons */
+.btn{height:40px;border-radius:20px;font-size:14px;font-weight:500;font-family:var(--font);cursor:pointer;padding:0 28px;border:none;transition:all .15s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-secondary{background:rgba(0,0,0,.06);color:var(--text-secondary)}
+.btn-secondary:hover{background:rgba(0,0,0,.1)}
+.btn-text{background:transparent;color:var(--text-secondary);padding:0 16px}
+.btn-text:hover{color:var(--text-primary)}
+.btn-full{width:100%}
+.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(255,59,48,.2)}
+.btn-danger:hover{background:rgba(255,59,48,.06)}
+
+/* Checkbox */
+.checkbox-row{display:flex;align-items:flex-start;gap:10px;padding:12px 0}
+.checkbox{width:18px;height:18px;border:1.5px solid rgba(0,0,0,.2);border-radius:4px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;margin-top:1px}
+.checkbox.checked{background:var(--accent);border-color:var(--accent)}
+.checkbox.checked svg{opacity:1}
+.checkbox svg{opacity:0;transition:opacity .15s}
+.checkbox-label{font-size:12.5px;color:var(--text-secondary);line-height:1.5;cursor:pointer}
+.checkbox-label a{color:var(--accent);text-decoration:none}
+.checkbox-label a:hover{text-decoration:underline}
+
+/* Step indicator */
+.steps-indicator{display:flex;gap:8px;justify-content:center;margin-bottom:20px}
+.step-dot-ind{width:8px;height:8px;border-radius:50%;background:rgba(0,0,0,.1);transition:all .2s}
+.step-dot-ind.active{background:var(--accent);width:24px;border-radius:4px}
+.step-dot-ind.done{background:var(--green)}
+
+/* Success state */
+.success-icon{width:72px;height:72px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.success-icon svg{width:36px;height:36px;color:var(--green)}
+.success-title{font-size:18px;font-weight:600;color:var(--text-primary);text-align:center;margin-bottom:8px}
+.success-desc{font-size:13px;color:var(--text-secondary);text-align:center;line-height:1.6;margin-bottom:20px}
+.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.feature-card{padding:14px;border-radius:var(--radius-s);background:rgba(0,0,0,.02);display:flex;align-items:flex-start;gap:10px}
+.feature-card-icon{font-size:20px;flex-shrink:0}
+.feature-card-text{font-size:12.5px;color:var(--text-secondary);line-height:1.5}
+.feature-card-title{font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:2px}
+
+/* Reject state */
+.reject-icon{width:72px;height:72px;border-radius:50%;background:rgba(255,149,0,.08);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.reject-icon svg{width:36px;height:36px;color:var(--amber)}
+
+/* Spec panel */
+.spec-panel{width:340px;background:var(--card-bg);border-radius:var(--radius-l);padding:20px;flex-shrink:0;overflow-y:auto}
+.spec-title{font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.spec-section{margin-bottom:16px}
+.spec-section-title{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.spec-item{display:flex;gap:8px;margin-bottom:5px;font-size:12px;color:var(--text-secondary);line-height:1.5}
+.spec-item .label{color:var(--text-primary);font-weight:500;white-space:nowrap;min-width:70px}
+.spec-divider{height:1px;background:var(--border);margin:12px 0}
+.spec-flow{display:flex;flex-direction:column;gap:6px}
+.spec-flow-step{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary)}
+.spec-flow-num{width:20px;height:20px;border-radius:50%;background:var(--accent-light);color:var(--accent);font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.spec-flow-arrow{color:var(--text-weak);font-size:10px;padding-left:6px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Flow Preview Area -->
+<div class="flow-container">
+  <div class="flow-label">点击下方按钮预览各步骤</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+    <button class="btn btn-primary" onclick="showStep(1)">步骤1：首次启动授权</button>
+    <button class="btn btn-secondary" onclick="showStep(2)">步骤2：权限详情</button>
+    <button class="btn btn-secondary" onclick="showStep(3)">步骤3：授权成功</button>
+    <button class="btn btn-secondary" onclick="showStep(4)">步骤4：拒绝授权</button>
+    <button class="btn btn-secondary" onclick="showStep(5)">步骤5：设置中管理</button>
+  </div>
+  <div style="margin-top:20px;padding:24px;background:var(--card-bg);border-radius:var(--radius-m);max-width:600px;width:100%">
+    <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:12px">📋 完整流程说明</div>
+    <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.8">
+      <b>首次启动</b>：用户打开 PC MiClaw → 检测未授权 → 弹出隐私授权弹窗<br>
+      <b>同意路径</b>：勾选协议 → 点击「同意并继续」→ 授权成功 → 进入主界面<br>
+      <b>拒绝路径</b>：点击「暂不使用」→ 显示功能受限说明 → 可选择返回授权或退出<br>
+      <b>后续管理</b>：设置 → 隐私与安全 → 可查看/撤销已授权的权限<br>
+      <b>再次触发</b>：撤销授权后，下次使用相关功能时重新弹出授权请求
+    </div>
+  </div>
+</div>
+
+<!-- Step 1: First Launch Privacy Dialog -->
+<div class="overlay" id="step1">
+  <div class="dialog">
+    <div class="dialog-body">
+      <div class="steps-indicator">
+        <div class="step-dot-ind active"></div>
+        <div class="step-dot-ind"></div>
+        <div class="step-dot-ind"></div>
+      </div>
+      <div class="logo-area">
+        <div class="logo-circle"><svg viewBox="0 0 32 32" fill="none"><path d="M16 4C9.4 4 4 9.4 4 16s5.4 12 12 12 12-5.4 12-12S22.6 4 16 4zm0 2c5.5 0 10 4.5 10 10s-4.5 10-10 10S6 21.5 6 16 10.5 6 16 6z" fill="white" opacity=".3"/><circle cx="16" cy="16" r="6" fill="white"/><path d="M13 16l2 2 4-4" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="logo-title">欢迎使用 MiClaw</div>
+        <div class="logo-subtitle">为了给你提供智能助手服务，MiClaw 需要获取以下权限。<br>你可以随时在设置中管理这些权限。</div>
+      </div>
+      <div class="perm-list">
+        <div class="perm-item">
+          <div class="perm-icon blue">🧠</div>
+          <div class="perm-info"><div class="perm-name">AI 对话与数据处理</div><div class="perm-desc">使用大语言模型处理你的对话内容，生成智能回复。对话数据会加密传输，不会用于模型训练。</div></div>
+        </div>
+        <div class="perm-item">
+          <div class="perm-icon green">📁</div>
+          <div class="perm-info"><div class="perm-name">本地文件访问</div><div class="perm-desc">读取和管理本地文件，帮你完成文件搜索、整理、编辑等任务。仅在你主动请求时访问。</div></div>
+        </div>
+        <div class="perm-item">
+          <div class="perm-icon amber">🔗</div>
+          <div class="perm-info"><div class="perm-name">设备互联通信</div><div class="perm-desc">通过小米账号与你的其他设备通信，实现跨设备任务协作。需要登录小米账号。</div></div>
+        </div>
+      </div>
+      <div class="checkbox-row" id="agreeCheck" onclick="toggleCheck()">
+        <div class="checkbox" id="checkbox"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="checkbox-label">我已阅读并同意 <a href="#">《MiClaw 用户协议》</a>和<a href="#">《隐私政策》</a></div>
+      </div>
+    </div>
+    <div class="dialog-footer" style="flex-direction:column;gap:10px">
+      <button class="btn btn-primary btn-full" id="agreeBtn" style="opacity:.5;pointer-events:none" onclick="showStep(3)">同意并继续</button>
+      <button class="btn btn-text btn-full" onclick="showStep(4)">暂不使用</button>
+    </div>
+  </div>
+</div>
+
+<!-- Step 2: Permission Detail (optional drill-down) -->
+<div class="overlay" id="step2">
+  <div class="dialog">
+    <div class="dialog-body">
+      <div class="steps-indicator">
+        <div class="step-dot-ind done"></div>
+        <div class="step-dot-ind active"></div>
+        <div class="step-dot-ind"></div>
+      </div>
+      <div style="font-size:18px;font-weight:600;color:var(--text-primary);margin-bottom:6px">权限详情</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:20px">以下是 MiClaw 需要的各项权限及其用途说明</div>
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="padding:16px;border-radius:var(--radius-s);border:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div class="perm-icon blue" style="width:32px;height:32px;border-radius:8px;font-size:16px">🧠</div>
+            <div style="font-size:14px;font-weight:500;color:var(--text-primary)">AI 对话与数据处理</div>
+          </div>
+          <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px">
+            MiClaw 使用云端大语言模型（MiMo / Gemini）处理你的对话请求。
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)">✓ 对话数据端到端加密传输</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)">✓ 不会用于模型训练</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)">✓ 对话历史仅存储在本地</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)">✓ 可随时清除对话记录</div>
+          </div>
+        </div>
+
+        <div style="padding:16px;border-radius:var(--radius-s);border:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div class="perm-icon green" style="width:32px;height:32px;border-radius:8px;font-size:16px">📁</div>
+            <div style="font-size:14px;font-weight:500;color:var(--text-primary)">本地文件访问</div>
+          </div>
+          <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px">
+            仅在你主动请求文件操作时访问，不会后台扫描。
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)">✓ 仅在用户请求时访问</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)">✓ 每次操作前需确认</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)">✓ 不会上传文件内容到云端</div>
+          </div>
+        </div>
+
+        <div style="padding:16px;border-radius:var(--radius-s);border:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div class="perm-icon amber" style="width:32px;height:32px;border-radius:8px;font-size:16px">🔗</div>
+            <div style="font-size:14px;font-weight:500;color:var(--text-primary)">设备互联通信</div>
+          </div>
+          <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px">
+            通过 MiTalk 协议与同账号设备通信，实现跨设备协作。
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)">✓ 仅同账号设备可通信</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)">✓ 消息加密传输</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green)">✓ 可单独关闭此功能</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="btn btn-secondary" onclick="showStep(1)">返回</button>
+      <button class="btn btn-primary" onclick="showStep(1)">我知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- Step 3: Success -->
+<div class="overlay" id="step3">
+  <div class="dialog">
+    <div class="dialog-body" style="padding-bottom:24px">
+      <div class="steps-indicator">
+        <div class="step-dot-ind done"></div>
+        <div class="step-dot-ind done"></div>
+        <div class="step-dot-ind active"></div>
+      </div>
+      <div class="success-icon"><svg viewBox="0 0 36 36" fill="none"><path d="M10 18l6 6 10-10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="success-title">授权成功</div>
+      <div class="success-desc">MiClaw 已准备就绪，你可以开始使用以下功能</div>
+      <div class="feature-grid">
+        <div class="feature-card"><div class="feature-card-icon">💬</div><div><div class="feature-card-title">智能对话</div><div class="feature-card-text">多模型 AI 助手，帮你处理各种任务</div></div></div>
+        <div class="feature-card"><div class="feature-card-icon">📁</div><div><div class="feature-card-title">文件管理</div><div class="feature-card-text">搜索、整理、编辑本地文件</div></div></div>
+        <div class="feature-card"><div class="feature-card-icon">🔗</div><div><div class="feature-card-title">设备互联</div><div class="feature-card-text">与手机、平板等设备协作</div></div></div>
+        <div class="feature-card"><div class="feature-card-icon">🏠</div><div><div class="feature-card-title">智能家居</div><div class="feature-card-text">控制米家设备，管理智能场景</div></div></div>
+      </div>
+    </div>
+    <div class="dialog-footer" style="justify-content:center">
+      <button class="btn btn-primary" onclick="hideAll()" style="min-width:200px">开始使用</button>
+    </div>
+  </div>
+</div>
+
+<!-- Step 4: Rejected -->
+<div class="overlay" id="step4">
+  <div class="dialog">
+    <div class="dialog-body" style="padding-bottom:24px">
+      <div class="reject-icon"><svg viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="14" stroke="currentColor" stroke-width="2"/><path d="M18 12v8M18 24v.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+      <div style="font-size:18px;font-weight:600;color:var(--text-primary);text-align:center;margin-bottom:8px">功能将受到限制</div>
+      <div style="font-size:13px;color:var(--text-secondary);text-align:center;line-height:1.6;margin-bottom:20px">
+        未授权情况下，以下功能将无法使用：
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,59,48,.04);border-radius:var(--radius-s)">
+          <span style="color:var(--red);font-size:14px">✕</span>
+          <span style="font-size:13px;color:var(--text-secondary)">AI 对话与智能回复</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,59,48,.04);border-radius:var(--radius-s)">
+          <span style="color:var(--red);font-size:14px">✕</span>
+          <span style="font-size:13px;color:var(--text-secondary)">文件搜索与管理</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,59,48,.04);border-radius:var(--radius-s)">
+          <span style="color:var(--red);font-size:14px">✕</span>
+          <span style="font-size:13px;color:var(--text-secondary)">跨设备协作</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,59,48,.04);border-radius:var(--radius-s)">
+          <span style="color:var(--red);font-size:14px">✕</span>
+          <span style="font-size:13px;color:var(--text-secondary)">智能家居控制</span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-weak);text-align:center">你可以随时在设置中重新授权</div>
+    </div>
+    <div class="dialog-footer" style="flex-direction:column;gap:10px">
+      <button class="btn btn-primary btn-full" onclick="showStep(1)">返回授权</button>
+      <button class="btn btn-text btn-full" onclick="hideAll()">退出 MiClaw</button>
+    </div>
+  </div>
+</div>
+
+<!-- Step 5: Settings Privacy Management -->
+<div class="overlay" id="step5">
+  <div class="dialog" style="width:520px">
+    <div class="dialog-body">
+      <div style="font-size:18px;font-weight:600;color:var(--text-primary);margin-bottom:4px">隐私与安全</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:20px">管理 MiClaw 的数据访问权限</div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <!-- Toggle items -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-s)">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:18px">🧠</span>
+            <div><div style="font-size:14px;font-weight:500;color:var(--text-primary)">AI 对话与数据处理</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px">已授权 · 2026年3月31日</div></div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-s)">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:18px">📁</span>
+            <div><div style="font-size:14px;font-weight:500;color:var(--text-primary)">本地文件访问</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px">已授权 · 2026年3月31日</div></div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-s)">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:18px">🔗</span>
+            <div><div style="font-size:14px;font-weight:500;color:var(--text-primary)">设备互联通信</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px">已授权 · 2026年3月31日</div></div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-s)">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:18px">🏠</span>
+            <div><div style="font-size:14px;font-weight:500;color:var(--text-primary)">智能家居控制</div><div style="font-size:12px;color:var(--text-weak);margin-top:2px">未授权 · 需要米家账号</div></div>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:4px">数据管理</div>
+        <button class="btn btn-secondary btn-full" style="justify-content:flex-start;text-align:left;padding:0 16px;display:flex;align-items:center;gap:8px"><span>🗑</span>清除对话历史</button>
+        <button class="btn btn-secondary btn-full" style="justify-content:flex-start;text-align:left;padding:0 16px;display:flex;align-items:center;gap:8px"><span>📋</span>导出我的数据</button>
+        <button class="btn btn-danger btn-full" style="height:40px;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px">撤销所有授权并退出</button>
+      </div>
+
+      <div class="link-row" style="margin-top:16px">
+        <a class="link" href="#">用户协议</a>
+        <a class="link" href="#">隐私政策</a>
+        <a class="link" href="#">数据安全白皮书</a>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="btn btn-secondary" onclick="hideAll()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Spec Panel -->
+<div class="spec-panel">
+  <div class="spec-title">📐 设计规范说明</div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">弹窗尺寸</div>
+    <div class="spec-item"><span class="label">宽度</span>480px（设置页 520px）</div>
+    <div class="spec-item"><span class="label">最大高度</span>85vh</div>
+    <div class="spec-item"><span class="label">圆角</span>24px</div>
+    <div class="spec-item"><span class="label">遮罩</span>rgba(0,0,0,.35) + blur(4px)</div>
+    <div class="spec-item"><span class="label">入场动画</span>scale(.96→1) + translateY(8→0)</div>
+  </div>
+
+  <div class="spec-divider"></div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">完整流程</div>
+    <div class="spec-flow">
+      <div class="spec-flow-step"><div class="spec-flow-num">1</div>首次启动 → 检测未授权</div>
+      <div class="spec-flow-arrow">↓</div>
+      <div class="spec-flow-step"><div class="spec-flow-num">2</div>弹出隐私授权弹窗（3项权限）</div>
+      <div class="spec-flow-arrow">↓</div>
+      <div class="spec-flow-step"><div class="spec-flow-num">3a</div>勾选协议 → 同意 → 成功页</div>
+      <div class="spec-flow-step"><div class="spec-flow-num">3b</div>暂不使用 → 功能受限说明</div>
+      <div class="spec-flow-arrow">↓</div>
+      <div class="spec-flow-step"><div class="spec-flow-num">4</div>进入主界面 / 退出应用</div>
+      <div class="spec-flow-arrow">↓</div>
+      <div class="spec-flow-step"><div class="spec-flow-num">5</div>设置中可随时管理权限</div>
+    </div>
+  </div>
+
+  <div class="spec-divider"></div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">权限项</div>
+    <div class="spec-item"><span class="label">AI 对话</span>必选，核心功能</div>
+    <div class="spec-item"><span class="label">文件访问</span>必选，工具能力依赖</div>
+    <div class="spec-item"><span class="label">设备互联</span>必选，跨端协作依赖</div>
+    <div class="spec-item"><span class="label">智能家居</span>可选，需额外米家授权</div>
+  </div>
+
+  <div class="spec-divider"></div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">与手机端 CTA 的差异</div>
+    <div class="spec-item" style="flex-direction:column;gap:4px">
+      <span>1. 手机端调用系统安全中心 CTA 弹窗，PC 端需自建</span>
+      <span>2. PC 端增加「权限详情」可展开查看</span>
+      <span>3. PC 端增加设置页权限管理（toggle 开关）</span>
+      <span>4. PC 端增加「数据管理」区域（清除/导出/撤销）</span>
+      <span>5. 拒绝后 PC 端显示功能受限列表，手机端直接退出</span>
+    </div>
+  </div>
+
+  <div class="spec-divider"></div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">合规要点</div>
+    <div class="spec-item" style="flex-direction:column;gap:4px">
+      <span>• 必须勾选协议才能点击「同意」</span>
+      <span>• 协议链接可点击跳转查看全文</span>
+      <span>• 拒绝后不强制退出，但功能受限</span>
+      <span>• 设置中可随时撤销授权</span>
+      <span>• 撤销后相关功能立即停用</span>
+      <span>• 数据可导出、可清除</span>
+    </div>
+  </div>
+
+  <div class="spec-divider"></div>
+
+  <div class="spec-section">
+    <div class="spec-section-title">交互操作</div>
+    <div class="spec-item" style="flex-direction:column;gap:4px">
+      <span>👆 点击顶部按钮切换各步骤</span>
+      <span>👆 步骤1中勾选协议后按钮激活</span>
+      <span>👆 步骤5中 toggle 可切换开关状态</span>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .app -->
+
+<style>
+.toggle{width:44px;height:24px;border-radius:12px;background:rgba(0,0,0,.15);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--accent)}
+.toggle-thumb{width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.toggle.on .toggle-thumb{transform:translateX(20px)}
+</style>
+
+<script>
+var checked=false;
+function toggleCheck(){
+  checked=!checked;
+  var cb=document.getElementById('checkbox');
+  var btn=document.getElementById('agreeBtn');
+  if(checked){cb.classList.add('checked');btn.style.opacity='1';btn.style.pointerEvents='auto'}
+  else{cb.classList.remove('checked');btn.style.opacity='.5';btn.style.pointerEvents='none'}
+}
+function hideAll(){
+  document.querySelectorAll('.overlay').forEach(function(o){o.classList.remove('show')});
+}
+function showStep(n){
+  hideAll();
+  setTimeout(function(){document.getElementById('step'+n).classList.add('show')},50);
+}
+</script>
+</body>
+</html>
